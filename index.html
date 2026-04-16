@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -78,7 +79,7 @@ body{font-family:var(--font-sans);background:var(--color-background-secondary);f
 .chip{font-size:10px;line-height:1.4;padding:2px 5px;border-radius:3px;border-left:2px solid;display:flex;align-items:flex-start;justify-content:space-between;gap:3px;cursor:grab;user-select:none}
 .chip:active{cursor:grabbing;opacity:.6}
 .chip.task-dragging{opacity:.3}
-.chip.cat-work{background:#FEF0E6;border-color:#E8650A;color:#7A3008}
+.chip.cat-work{background:#E6F1FB;border-color:#378ADD;color:#0C447C}
 .chip.cat-practicum{background:#EEEDFE;border-color:#7F77DD;color:#3C3489}
 .chip.cat-personal{background:#E0F5F3;border-color:#2A9D8F;color:#0D5C55}
 .chip.cat-urgent{background:#FCEBEB;border-color:#E24B4A;color:#791F1F}
@@ -111,7 +112,11 @@ body{font-family:var(--font-sans);background:var(--color-background-secondary);f
 .thisweek-title{font-size:10px;font-weight:500;color:var(--color-text-secondary)}
 .thisweek-dates{font-size:9px;color:var(--color-text-tertiary)}
 .thisweek-body{padding:6px;display:flex;flex-direction:column;gap:3px}
-.tw-item{display:flex;align-items:flex-start;gap:6px;padding:3px 4px;border-radius:4px;font-size:11px;color:var(--color-text-primary);cursor:default}
+.tw-item{display:flex;align-items:flex-start;gap:6px;padding:3px 4px;border-radius:4px;font-size:11px;color:var(--color-text-primary);cursor:grab}
+.tw-item:active{opacity:.6;cursor:grabbing}
+.tw-item.tw-dragging{opacity:.3}
+.thisweek-box.tw-drop-over{outline:1.5px dashed #378ADD;background:var(--color-background-info)}
+.day-col.day-tw-drop-over{outline:1.5px dashed #378ADD}
 .tw-item:hover{background:var(--color-background-secondary)}
 .tw-item input[type=checkbox]{cursor:pointer;flex-shrink:0;margin-top:2px}
 .tw-item-text{flex:1;line-height:1.4;cursor:text}
@@ -167,6 +172,8 @@ body{font-family:var(--font-sans);background:var(--color-background-secondary);f
       <button class="nav-btn" onclick="shift(1)">›</button>
       <button class="today-btn" onclick="jumpToday()">today</button>
       <button class="sync-btn" id="sync-btn" onclick="manualSync()"><span class="sync-dot" id="sync-dot"></span><span id="sync-label">Sign in</span></button>
+      <button class="sync-btn" onclick="exportData()" title="Export schedule">↓ Export</button>
+      <label class="sync-btn" style="cursor:pointer" title="Import schedule">↑ Import<input type="file" accept=".json" style="display:none" onchange="importData(this)"/></label>
     </div>
   </div>
   <div id="signin-banner" class="signin-banner" style="display:none">Sign in to sync your schedule across all your devices. <button onclick="signIn()">Connect Google Drive</button></div>
@@ -190,8 +197,8 @@ body{font-family:var(--font-sans);background:var(--color-background-secondary);f
 </div>
 
 <script>
-const CATS={work:'Work',practicum:'Practicum/school',personal:'Personal',urgent:'Urgent',gs:'Girl Scouts',quick:'Quick errand',external:'Fixed event',flex:'Buffer',done:'Done',moved:'Deferred'};
-const CC={work:'#E8650A',practicum:'#7F77DD',personal:'#2A9D8F',urgent:'#E24B4A',gs:'#BA7517',quick:'#FF3DA0',external:'#888780',flex:'#B4B2A9',done:'#2A9D8F',moved:'#B4B2A9'};
+const CATS={work:'Work',practicum:'School',personal:'Personal',urgent:'Urgent',gs:'Practicum',quick:'Quick errand',external:'Fixed event',flex:'Buffer',done:'Done',moved:'Deferred'};
+const CC={work:'#378ADD',practicum:'#7F77DD',personal:'#2A9D8F',urgent:'#E24B4A',gs:'#BA7517',quick:'#FF3DA0',external:'#888780',flex:'#B4B2A9',done:'#2A9D8F',moved:'#B4B2A9'};
 const MO={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
 const MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const DN=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -309,6 +316,24 @@ function driveSave(){
   saveTimer=setTimeout(saveToDriveNow,1500);
 }
 
+function exportData(){
+  const blob=new Blob([JSON.stringify(store,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='caroline-schedule.json';a.click();
+}
+function importData(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      store=JSON.parse(e.target.result);
+      save();render();
+      alert('Schedule imported successfully!');
+    }catch(err){alert('Could not read file — make sure it\'s a valid schedule export.');}
+  };
+  reader.readAsText(file);
+  input.value='';
+}
 function showBanner(show){
   const b=document.getElementById('signin-banner');
   if(b)b.style.display=show?'flex':'none';
@@ -375,7 +400,7 @@ function sortUpcoming(){
 function render(){rLeg();rDays();rThisWeek();rUp();}
 
 function rLeg(){
-  document.getElementById('legend').innerHTML=Object.entries(CC).filter(([k])=>k!=='moved'&&k!=='flex').map(([k,v])=>
+  document.getElementById('legend').innerHTML=Object.entries(CC).filter(([k])=>k!=='moved'&&k!=='flex'&&k!=='done').map(([k,v])=>
     `<div class="leg"><div class="leg-dot" style="background:${v}"></div>${CATS[k]}</div>`).join('');
 }
 
@@ -418,7 +443,7 @@ function dayH(iso){
     :`<div class="add-day-btn" onclick="oDF('${iso}')">+ add task</div>`;
   const note=d.note||'';
   const noteH=`<div class="day-note${note?'':' empty'}" ondblclick="eNote(this,'${iso}')">${note||'add note…'}</div>`;
-  return `<div class="day-col">
+  return `<div class="day-col" data-iso="${iso}">
     <div class="day-hdr status-${st}"><div class="dname">${name}</div><div class="ddate">${dateStr}${st==='today'?' — today':st==='done'?' — done':''}</div></div>
     ${noteH}
     <div class="slots day-slots-drop" data-day-drop="${iso}">${slots}${trailDZ}</div>
@@ -431,7 +456,7 @@ function rDays(){
   const first=fd(pk(isos[0])),last=fd(pk(isos[6]));
   document.getElementById('week-label').textContent=first+' – '+last;
   document.getElementById('days-grid').innerHTML=isos.map(iso=>dayH(iso)).join('');
-  wF();bindDrag();
+  wF();bindDrag();bindCrossDrag();
 }
 
 function rThisWeek(){
@@ -450,7 +475,7 @@ function rThisWeek(){
     const monDate=pk(g.mon),sunDate=new Date(monDate);sunDate.setDate(monDate.getDate()+6);
     const label=fd(monDate)+' – '+fd(sunDate);
     const tasksHtml=tasks.map(t=>`
-      <div class="tw-item">
+      <div class="tw-item" draggable="true" data-tw-mon="${g.mon}" data-tw-id="${t.id}">
         <input type="checkbox" ${t.done?'checked':''} onchange="twToggle('${g.mon}','${t.id}',this.checked)"/>
         <span class="tw-item-text${t.done?' done-text':''}" ondblclick="twEdit(this,'${g.mon}','${t.id}')">${t.text}</span>
         <span class="tw-del" onclick="twDel('${g.mon}','${t.id}')">✕</span>
@@ -462,7 +487,7 @@ function rThisWeek(){
           <button onclick="twCancel()">✕</button>
         </div>`
       :`<div class="tw-add-btn" onclick="twOpen('${g.mon}')">+ add</div>`;
-    html+=`<div class="thisweek-box" style="grid-column:span ${g.span}">
+    html+=`<div class="thisweek-box" data-tw-box="${g.mon}" style="grid-column:span ${g.span}">
       <div class="thisweek-hdr">
         <span class="thisweek-title">This week</span>
         <span class="thisweek-dates">${label}</span>
@@ -473,6 +498,7 @@ function rThisWeek(){
   });
   document.getElementById('thisweek-grid').innerHTML=html;
   if(twForm){setTimeout(()=>{const el=document.getElementById('tw-inp-'+twForm);if(el)el.focus();},30);}
+  bindCrossDrag();
 }
 
 function twOpen(mon){twForm=mon;rThisWeek();}
@@ -634,6 +660,78 @@ function bindDrag(){
   });
 }
 function clearDZ(){document.querySelectorAll('.drag-over-zone,.task-dz-over,.day-drag-over').forEach(x=>x.classList.remove('drag-over-zone','task-dz-over','day-drag-over'));}
+
+let crossDrag=null; // {type:'task'|'tw', iso?, sid?, tid?, mon?, twId?}
+
+function bindCrossDrag(){
+  // TW items → drag to day columns
+  document.querySelectorAll('[data-tw-mon]').forEach(el=>{
+    el.addEventListener('dragstart',e=>{
+      crossDrag={type:'tw',mon:el.dataset.twMon,twId:el.dataset.twId};
+      el.classList.add('tw-dragging');
+      e.dataTransfer.effectAllowed='move';
+      e.stopPropagation();
+    });
+    el.addEventListener('dragend',()=>{
+      el.classList.remove('tw-dragging');
+      document.querySelectorAll('.day-tw-drop-over,.tw-drop-over').forEach(x=>x.classList.remove('day-tw-drop-over','tw-drop-over'));
+      crossDrag=null;
+    });
+  });
+
+  // Day task chips → drag to this-week boxes
+  document.querySelectorAll('[data-dtype="task"]').forEach(el=>{
+    el.addEventListener('dragstart',e=>{
+      if(!crossDrag) crossDrag={type:'task',iso:el.dataset.day,sid:el.dataset.slot,tid:el.dataset.task};
+    });
+    el.addEventListener('dragend',()=>{ crossDrag=null; });
+  });
+
+  // Day columns as drop targets for TW items
+  document.querySelectorAll('[data-iso]').forEach(el=>{
+    el.addEventListener('dragover',e=>{
+      if(!crossDrag||crossDrag.type!=='tw')return;
+      e.preventDefault();el.classList.add('day-tw-drop-over');
+    });
+    el.addEventListener('dragleave',e=>{if(!el.contains(e.relatedTarget))el.classList.remove('day-tw-drop-over');});
+    el.addEventListener('drop',e=>{
+      e.preventDefault();el.classList.remove('day-tw-drop-over');
+      if(!crossDrag||crossDrag.type!=='tw')return;
+      const iso=el.dataset.iso;
+      const tw=getTW(crossDrag.mon),item=tw.find(x=>x.id===crossDrag.twId);
+      if(!item)return;
+      // Remove from this-week
+      store.thisWeek[crossDrag.mon]=tw.filter(x=>x.id!==crossDrag.twId);
+      // Add as task to day (new slot if none, else last slot)
+      const slots=gsa(iso);
+      const task={id:uid(),text:item.text,cat:'personal'};
+      if(slots.length>0){slots[slots.length-1].tasks.push(task);}
+      else{slots.push({id:uid(),time:null,tasks:[task]});}
+      crossDrag=null;save();rDays();rThisWeek();
+    });
+  });
+
+  // This-week boxes as drop targets for day tasks
+  document.querySelectorAll('[data-tw-box]').forEach(el=>{
+    el.addEventListener('dragover',e=>{
+      if(!crossDrag||crossDrag.type!=='task')return;
+      e.preventDefault();el.classList.add('tw-drop-over');
+    });
+    el.addEventListener('dragleave',e=>{if(!el.contains(e.relatedTarget))el.classList.remove('tw-drop-over');});
+    el.addEventListener('drop',e=>{
+      e.preventDefault();el.classList.remove('tw-drop-over');
+      if(!crossDrag||crossDrag.type!=='task')return;
+      const mon=el.dataset.twBox;
+      const s=fs(crossDrag.iso,crossDrag.sid);
+      if(!s)return;
+      const task=s.tasks.find(t=>t.id===crossDrag.tid);if(!task)return;
+      s.tasks=s.tasks.filter(t=>t.id!==crossDrag.tid);
+      ce(crossDrag.iso);
+      getTW(mon).push({id:uid(),text:task.text,done:false});
+      crossDrag=null;save();rDays();rThisWeek();
+    });
+  });
+}
 
 function rUp(){
   const cards=store.upcoming||[];
