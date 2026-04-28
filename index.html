@@ -235,7 +235,7 @@ function signIn(){
     gToken=resp.access_token;showBanner(false);setSyncState('syncing','Loading\u2026');
     await loadFromDrive();
   }});
-  client.requestAccessToken({prompt:'consent'});
+  client.requestAccessToken({});
 }
 function manualSync(){if(!gToken){signIn();return;}setSyncState('syncing');saveToDriveNow();}
 async function loadFromDrive(){
