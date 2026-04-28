@@ -155,6 +155,27 @@ body{font-family:var(--font-sans);background:var(--color-background-secondary);f
 .add-upcoming-form{margin-top:8px;display:none;flex-direction:column;gap:5px}
 .add-upcoming-form input{font-size:11px;padding:5px 8px;border-radius:6px;border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);color:var(--color-text-primary);width:100%}
 .add-upcoming-form input:focus{outline:none;border-color:var(--color-border-primary)}
+.quickadd-bar{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:10px;padding:8px 10px;margin-bottom:10px;display:flex;gap:8px;align-items:center}
+.quickadd-input{flex:1;font-size:13px;padding:7px 10px;border-radius:7px;border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);color:var(--color-text-primary)}
+.quickadd-input:focus{outline:none;border-color:#378ADD}
+.quickadd-btn{font-size:11px;padding:7px 14px;border-radius:7px;border:0.5px solid #378ADD;background:#E6F1FB;color:#185FA5;cursor:pointer;font-weight:500;white-space:nowrap}
+.quickadd-btn:hover{background:#d0e8f8}
+.quickadd-hint{font-size:10px;color:var(--color-text-tertiary);padding:0 2px}
+.quickadd-feedback{font-size:11px;padding:4px 8px;border-radius:5px;display:none;margin-top:4px}
+.quickadd-feedback.ok{background:#E0F5F3;color:#0D5C55;display:block}
+.quickadd-feedback.err{background:#FCEBEB;color:#791F1F;display:block}
+.watching-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.watching-item{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:8px;padding:7px 10px;display:flex;align-items:flex-start;gap:8px;font-size:11px;color:var(--color-text-primary);min-width:180px;flex:1;cursor:grab}
+.watching-item:active{cursor:grabbing;opacity:.6}
+.watching-item.watch-dragging{opacity:.3}
+.watching-dot{width:7px;height:7px;border-radius:50%;background:#BA7517;flex-shrink:0;margin-top:3px}
+.watching-text{flex:1;cursor:text;line-height:1.4}
+.watching-del{font-size:9px;color:var(--color-text-tertiary);cursor:pointer;opacity:0;flex-shrink:0}
+.watching-item:hover .watching-del{opacity:.6}
+.watching-add-wrap{background:var(--color-background-primary);border:0.5px dashed var(--color-border-tertiary);border-radius:8px;padding:7px 10px;font-size:11px;color:var(--color-text-tertiary);cursor:pointer;min-width:140px}
+.watching-add-wrap:hover{color:var(--color-text-secondary);background:var(--color-background-secondary)}
+.carryover-btn{font-size:10px;padding:4px 10px;border-radius:6px;border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-secondary);cursor:pointer;white-space:nowrap}
+.carryover-btn:hover{background:var(--color-background-secondary);color:var(--color-text-primary)}
 </style>
 </head>
 <body>
@@ -175,9 +196,19 @@ body{font-family:var(--font-sans);background:var(--color-background-secondary);f
     </div>
   </div>
   <div id="signin-banner" class="signin-banner" style="display:none">Sign in to sync your schedule across all your devices. <button onclick="signIn()">Connect Google Drive</button></div>
+  <div class="quickadd-bar">
+    <input class="quickadd-input" id="qa-input" placeholder="thursday 4pm call with Lauren work" onkeydown="if(event.key==='Enter')quickAdd()"/>
+    <button class="quickadd-btn" onclick="quickAdd()">Add ↵</button>
+  </div>
+  <div id="qa-feedback" class="quickadd-feedback"></div>
   <div class="legend" id="legend"></div>
   <div class="days-grid" id="days-grid"></div>
   <div class="thisweek-grid" id="thisweek-grid"></div>
+  <div class="section-label" style="display:flex;align-items:center;justify-content:space-between">
+    <span>Watching</span>
+    <span style="font-size:10px;color:var(--color-text-tertiary);font-weight:400;text-transform:none;letter-spacing:0">things to keep an eye on — no deadline</span>
+  </div>
+  <div class="watching-grid" id="watching-grid"></div>
   <div class="section-label">Coming up</div>
   <div class="upcoming-grid" id="upcoming-grid"></div>
   <div class="add-upcoming-wrap">
@@ -215,10 +246,10 @@ const CLIENT_ID='270499684961-ckdogm7aoou3mbtvc2f73g5tkfh52a5c.apps.googleuserco
 const SCOPE='https://www.googleapis.com/auth/drive.file';
 const FNAME='caroline-schedule.json';
 let gToken=null,driveFileId=null,saveTimer=null;
-let store={days:{},upcoming:[],thisWeek:{},windowStart:fk(new Date())};
+let store={days:{},upcoming:[],thisWeek:{},watching:[],windowStart:fk(new Date())};
 
 // ---- Embedded initial data (brain dump update) ----
-const EMBEDDED_STORE = {"days": {"2026-04-16": {"slots": [{"id": "x5xn41r", "time": null, "tasks": [{"id": "xdvqykp", "text": "send note to leave coverage team", "cat": "done"}]}, {"id": "x844ly1", "time": "4:30-7:30", "tasks": [{"id": "xowm291", "text": "Practicum", "cat": "external"}]}, {"id": "xlos6dg", "time": "After Practicum", "tasks": [{"id": "xqglpbg", "text": "Notes for process recording", "cat": "done"}]}], "note": ""}, "2026-04-17": {"slots": [{"id": "xedb8b9", "time": null, "tasks": [{"id": "xcjyp6u", "text": "Draft EH Language", "cat": "done"}, {"id": "xatf9kq", "text": "Respond to resource hu", "cat": "done"}, {"id": "x10t0ti", "text": "Respond to shay", "cat": "done"}]}], "note": ""}, "2026-04-18": {"slots": [{"id": "xumjwid", "time": "10-11", "tasks": [{"id": "xk2lme3", "text": "Sophia - gym", "cat": "done"}]}, {"id": "x0gxo9y", "time": "1-1:45", "tasks": [{"id": "xgd8eqy", "text": "Meet with Jess", "cat": "done"}, {"id": "x9yuzcy", "text": "Practice Group", "cat": "done"}]}, {"id": "xn3vi0o", "time": "4:45-10:30", "tasks": [{"id": "xmfoxwm", "text": "Dinner & Show", "cat": "personal"}]}], "note": ""}, "2026-04-19": {"slots": [{"id": "x36uhrp", "time": null, "tasks": [{"id": "x7j2czh", "text": "Do research assignment", "cat": "done"}, {"id": "xd5nq9o", "text": "Practice Group Briefs & Practice it", "cat": "done"}]}], "note": ""}, "2026-04-20": {"slots": [{"id": "xkfxy5l", "time": "9:30-1 pm", "tasks": [{"id": "xkxbfiu", "text": "Social Crisis Cell Validation", "cat": "done"}]}, {"id": "xf6668a", "time": "1-4:30 pm", "tasks": [{"id": "x77vxs5", "text": "Meetings", "cat": "external"}, {"id": "x417amh", "text": "Walk Arwen", "cat": "personal"}]}, {"id": "xdjh7mi", "time": "Before class", "tasks": [{"id": "xruifo6", "text": "Print out facilitator guides", "cat": "done"}, {"id": "x91526q", "text": "Make dinner", "cat": "personal"}]}, {"id": "x8v7ace", "time": "6:25 pm - 9 pm", "tasks": [{"id": "xtj99ui", "text": "Class", "cat": "external"}]}], "note": ""}, "2026-04-21": {"slots": [{"id": "x20mknr", "time": "7:20 AM", "tasks": [{"id": "xstlfhw", "text": "Fall Registration", "cat": "external"}]}, {"id": "xprc7ij", "time": "9-10 AM", "tasks": [{"id": "x3brd4f", "text": "Process Recording", "cat": "done"}, {"id": "xr1onyn", "text": "TS curriculum", "cat": "done"}]}, {"id": "x0yefpn", "time": "10 am - 5 pm", "tasks": [{"id": "x6f33in", "text": "Social Crisis - finalize to share", "cat": "done"}]}, {"id": "xq9qgym", "time": "6-7", "tasks": [{"id": "xhj4iwz", "text": "Practicum", "cat": "done"}]}], "note": ""}, "2026-04-22": {"slots": [{"id": "x76w8b9", "time": null, "tasks": [{"id": "xsbvrrr", "text": "Girl Scout SWAPS", "cat": "done"}]}], "note": ""}, "2026-04-15": {"slots": [], "note": ""}, "2026-04-23": {"slots": [{"id": "xid1kb6", "time": "Before 11 AM", "tasks": [{"id": "xfn8oqq", "text": "Update Handbooks", "cat": "done"}]}, {"id": "xu41l9b", "time": "4:30-7:30", "tasks": [{"id": "x41zat2", "text": "Practicum", "cat": "done"}]}], "note": ""}, "2026-04-24": {"slots": [{"id": "x77v1ci", "time": "Before 11 AM", "tasks": [{"id": "xy5trwm", "text": "Input Jira Tasks", "cat": "done"}]}, {"id": "xzpkt9q", "time": "11-12:30", "tasks": [{"id": "xpz9i12", "text": "Send abe bday note", "cat": "done"}, {"id": "xbcr61g", "text": "Meetings", "cat": "done"}]}, {"id": "xmrkfq4", "time": "1-3 PM", "tasks": [{"id": "xaqged5", "text": "Meetings", "cat": "done"}]}, {"id": "xtfdxsu", "time": "EVENING", "tasks": [{"id": "xnngcum", "text": "Abby dinner", "cat": "external"}, {"id": "x8rlt3m", "text": "Movie", "cat": "external"}]}], "note": ""}, "2026-04-14": {"slots": [], "note": ""}, "2026-04-25": {"slots": [{"id": "xnwj52e", "time": "MORNING", "tasks": [{"id": "xp6g46t", "text": "Role play reflection", "cat": "practicum"}, {"id": "x8m134f", "text": "Research Assignment", "cat": "practicum"}]}, {"id": "xj19sqg", "time": "1:15-4:30", "tasks": [{"id": "xqbhavx", "text": "Hair", "cat": "personal"}]}, {"id": "x7k9m5j", "time": "EVENING", "tasks": [{"id": "xdxj7g7", "text": "AP", "cat": "personal"}]}], "note": ""}, "2026-04-26": {"slots": [{"id": "x9jp8ty", "time": "2-3 PM", "tasks": [{"id": "xrulsok", "text": "Cake arrives", "cat": "personal"}]}, {"id": "xoku6hb", "time": "4-8 PM", "tasks": [{"id": "xko12o3", "text": "Abe Bday Park hang", "cat": "personal"}]}], "note": ""}, "2026-04-27": {"slots": [{"id": "xl9t6bj", "time": null, "tasks": [{"id": "x5j0aax", "text": "Send note to leave coverage team", "cat": "done"}, {"id": "xy66nbc", "text": "SW Notes", "cat": "done"}]}, {"id": "xqokqkm", "time": "Before Class", "tasks": [{"id": "xt82s61", "text": "Submit Role Play assessment", "cat": "done"}]}, {"id": "xxux7pf", "time": "6:30-9", "tasks": [{"id": "xks43t9", "text": "Class", "cat": "external"}]}], "note": ""}, "2026-04-28": {"slots": [{"id": "xtoday1", "time": "TODAY - URGENT", "tasks": [{"id": "xt1a", "text": "Make Abe lunch graduation reservation", "cat": "urgent"}, {"id": "xt1b", "text": "CS H1 PBC options brief", "cat": "work"}, {"id": "xt1c", "text": "Reschedule dermatologist", "cat": "quick"}, {"id": "xt1d", "text": "Set up Q2 goal setting + sprint planning session", "cat": "work"}]}, {"id": "xtoday2", "time": null, "tasks": [{"id": "xt2a", "text": "Succession Planning Synthesis", "cat": "work"}]}], "note": ""}, "2026-04-29": {"slots": [{"id": "xtom1", "time": "TOMORROW", "tasks": [{"id": "xto1", "text": "Update SW notes (based on feedback)", "cat": "practicum"}, {"id": "xto2", "text": "Social crisis framework updates", "cat": "work"}]}], "note": ""}, "2026-04-30": {"slots": [{"id": "xcno0fy", "time": "EVENING", "tasks": [{"id": "xkh4yz8", "text": "Dinner with mom", "cat": "personal"}]}], "note": ""}, "2026-05-01": {"slots": [], "note": ""}, "2026-05-02": {"slots": [], "note": ""}, "2026-05-03": {"slots": [], "note": ""}}, "upcoming": [{"id": "x6finb6", "date": "April 27", "items": [{"id": "xnms3kj", "text": "Role Play Assessment Due", "note": ""}]}, {"id": "x5b15jq", "date": "April 29", "items": [{"id": "xtaq70w", "text": "Abe birthday", "note": ""}]}, {"id": "xr5dxuf", "date": "May 5", "items": [{"id": "xl8wfs3", "text": "Practicum Ends", "note": "Schedule Abi and Katy"}]}, {"id": "xtew5mp", "date": "May 10", "items": [{"id": "xguuzia", "text": "Mother's Day \ud83c\udf38", "note": ""}]}, {"id": "xwbs2o0", "date": "May 11", "items": [{"id": "xm0f67o", "text": "Groups Final Due", "note": ""}]}, {"id": "xu5eo2w", "date": "May 15", "items": [{"id": "xixeut5", "text": "Abby & husband wedding gift", "note": "~2 weeks to make \u2192 start by May 15"}]}, {"id": "xm8nef2", "date": "May 18", "items": [{"id": "x2h8lun", "text": "Set up supervision with Meredith", "note": ""}]}, {"id": "x10m0za", "date": "May 30", "items": [{"id": "x3kb5bi", "text": "Schedule gardening", "note": ""}]}, {"id": "xi0x0m7", "date": "June 1", "items": [{"id": "xrzjd9s", "text": "Book Peachy Appt before 7/16", "note": ""}]}, {"id": "xup01", "date": "May 2026", "items": [{"id": "xup01a", "text": "Set up mid-sprint check-in for May", "note": ""}]}, {"id": "xup02", "date": "May 28", "items": [{"id": "xup02a", "text": "Figure out onsite day with team", "note": ""}]}, {"id": "xup03", "date": "Q2", "items": [{"id": "xup03a", "text": "Regional transition governance", "note": ""}, {"id": "xup03b", "text": "Find out when budgeting happens for leave data dashboard + analysis for leaders", "note": "H2 target"}]}, {"id": "xup04", "date": "TBD", "items": [{"id": "xup04a", "text": "Finish cross stitch for niece", "note": "Before baptism \u2014 date unknown"}, {"id": "xup04b", "text": "Research Portugal trip", "note": ""}, {"id": "xup04c", "text": "Reach out to David about London trip", "note": ""}]}], "thisWeek": {"2026-04-13": [{"id": "x11kn70", "text": "Baby gift", "done": true}, {"id": "xsvimk7", "text": "Book derm", "done": true}, {"id": "xn5yocp", "text": "Hair appt", "done": true}], "2026-04-20": [{"id": "xgnddlt", "text": "Abe bday gift", "done": true}, {"id": "xbxi987", "text": "Schedule onsite", "done": true}, {"id": "xxftj0o", "text": "Order cake", "done": true}], "2026-04-27": [{"id": "x2na6fs", "text": "Book annual physical and sinus check", "done": false}, {"id": "xtug18l", "text": "abe grad", "done": false}, {"id": "xb96usb", "text": "reschedule glassblowing", "done": false}, {"id": "xuyqlmo", "text": "Exec relo package", "done": false}, {"id": "xgshols", "text": "Spring wardrobe", "done": false}, {"id": "xkzou83", "text": "Update SW notes", "done": false}, {"id": "xdb7t72", "text": "Reach out to Carla and Amia", "done": false}, {"id": "x2pwt6e", "text": "Place wedding album order", "done": false}, {"id": "xnw01", "text": "Get another volunteer for leave coverage planning synthesis", "done": false}, {"id": "xnw02", "text": "Set up time with regional directors on leave coverage", "done": false}, {"id": "xnw03", "text": "Figure out how to involve PBPs in regional director conversation", "done": false}, {"id": "xnw04", "text": "Check if Deb & Mary global learning stipend calendar invite sent (if not, reach out)", "done": false}, {"id": "xnw05", "text": "Reach out to families \u2014 letting them know you're leaving practicum", "done": false}, {"id": "xnw06", "text": "Respond to Vanessa", "done": false}, {"id": "xnw07", "text": "See whether you can cancel Carmine dinner reservation", "done": false}, {"id": "xnw08", "text": "Create Jira ticket \u2014 transitioning PBC leave process to comp team", "done": false}, {"id": "xnw09", "text": "Create Jira ticket \u2014 operationalization of Japan parental leave enhancements", "done": false}, {"id": "xnw10", "text": "Book London lodging", "done": false}, {"id": "xnw11", "text": "Book Portugal lodging", "done": false}, {"id": "xnw12", "text": "Research before Lauren meeting on exec relocation package", "done": false}, {"id": "xnw13", "text": "\u23f8 BLOCKED: Relocation address change \u2014 waiting on payroll examples", "done": false}, {"id": "xnw14", "text": "\u23f8 Set up Tenaya to drive Workday (get Shay off it)", "done": false}, {"id": "xnw15", "text": "\u23f8 Follow up with Hanhe + Ellie \u2014 team wellness day (Australia issues)", "done": false}]}, "windowStart": "2026-04-28"};
+const EMBEDDED_STORE = {"days": {"2026-04-16": {"slots": [{"id": "x5xn41r", "time": null, "tasks": [{"id": "xdvqykp", "text": "send note to leave coverage team", "cat": "done"}]}, {"id": "x844ly1", "time": "4:30-7:30", "tasks": [{"id": "xowm291", "text": "Practicum", "cat": "external"}]}, {"id": "xlos6dg", "time": "After Practicum", "tasks": [{"id": "xqglpbg", "text": "Notes for process recording", "cat": "done"}]}], "note": ""}, "2026-04-17": {"slots": [{"id": "xedb8b9", "time": null, "tasks": [{"id": "xcjyp6u", "text": "Draft EH Language", "cat": "done"}, {"id": "xatf9kq", "text": "Respond to resource hu", "cat": "done"}, {"id": "x10t0ti", "text": "Respond to shay", "cat": "done"}]}], "note": ""}, "2026-04-18": {"slots": [{"id": "xumjwid", "time": "10-11", "tasks": [{"id": "xk2lme3", "text": "Sophia - gym", "cat": "done"}]}, {"id": "x0gxo9y", "time": "1-1:45", "tasks": [{"id": "xgd8eqy", "text": "Meet with Jess", "cat": "done"}, {"id": "x9yuzcy", "text": "Practice Group", "cat": "done"}]}, {"id": "xn3vi0o", "time": "4:45-10:30", "tasks": [{"id": "xmfoxwm", "text": "Dinner & Show", "cat": "personal"}]}], "note": ""}, "2026-04-19": {"slots": [{"id": "x36uhrp", "time": null, "tasks": [{"id": "x7j2czh", "text": "Do research assignment", "cat": "done"}, {"id": "xd5nq9o", "text": "Practice Group Briefs & Practice it", "cat": "done"}]}], "note": ""}, "2026-04-20": {"slots": [{"id": "xkfxy5l", "time": "9:30-1 pm", "tasks": [{"id": "xkxbfiu", "text": "Social Crisis Cell Validation", "cat": "done"}]}, {"id": "xf6668a", "time": "1-4:30 pm", "tasks": [{"id": "x77vxs5", "text": "Meetings", "cat": "external"}, {"id": "x417amh", "text": "Walk Arwen", "cat": "personal"}]}, {"id": "xdjh7mi", "time": "Before class", "tasks": [{"id": "xruifo6", "text": "Print out facilitator guides", "cat": "done"}, {"id": "x91526q", "text": "Make dinner", "cat": "personal"}]}, {"id": "x8v7ace", "time": "6:25 pm - 9 pm", "tasks": [{"id": "xtj99ui", "text": "Class", "cat": "external"}]}], "note": ""}, "2026-04-21": {"slots": [{"id": "x20mknr", "time": "7:20 AM", "tasks": [{"id": "xstlfhw", "text": "Fall Registration", "cat": "external"}]}, {"id": "xprc7ij", "time": "9-10 AM", "tasks": [{"id": "x3brd4f", "text": "Process Recording", "cat": "done"}, {"id": "xr1onyn", "text": "TS curriculum", "cat": "done"}]}, {"id": "x0yefpn", "time": "10 am - 5 pm", "tasks": [{"id": "x6f33in", "text": "Social Crisis - finalize to share", "cat": "done"}]}, {"id": "xq9qgym", "time": "6-7", "tasks": [{"id": "xhj4iwz", "text": "Practicum", "cat": "done"}]}], "note": ""}, "2026-04-22": {"slots": [{"id": "x76w8b9", "time": null, "tasks": [{"id": "xsbvrrr", "text": "Girl Scout SWAPS", "cat": "done"}]}], "note": ""}, "2026-04-15": {"slots": [], "note": ""}, "2026-04-23": {"slots": [{"id": "xid1kb6", "time": "Before 11 AM", "tasks": [{"id": "xfn8oqq", "text": "Update Handbooks", "cat": "done"}]}, {"id": "xu41l9b", "time": "4:30-7:30", "tasks": [{"id": "x41zat2", "text": "Practicum", "cat": "done"}]}], "note": ""}, "2026-04-24": {"slots": [{"id": "x77v1ci", "time": "Before 11 AM", "tasks": [{"id": "xy5trwm", "text": "Input Jira Tasks", "cat": "done"}]}, {"id": "xzpkt9q", "time": "11-12:30", "tasks": [{"id": "xpz9i12", "text": "Send abe bday note", "cat": "done"}, {"id": "xbcr61g", "text": "Meetings", "cat": "done"}]}, {"id": "xmrkfq4", "time": "1-3 PM", "tasks": [{"id": "xaqged5", "text": "Meetings", "cat": "done"}]}, {"id": "xtfdxsu", "time": "EVENING", "tasks": [{"id": "xnngcum", "text": "Abby dinner", "cat": "external"}, {"id": "x8rlt3m", "text": "Movie", "cat": "external"}]}], "note": ""}, "2026-04-14": {"slots": [], "note": ""}, "2026-04-25": {"slots": [{"id": "xnwj52e", "time": "MORNING", "tasks": [{"id": "xp6g46t", "text": "Role play reflection", "cat": "practicum"}, {"id": "x8m134f", "text": "Research Assignment", "cat": "practicum"}]}, {"id": "xj19sqg", "time": "1:15-4:30", "tasks": [{"id": "xqbhavx", "text": "Hair", "cat": "personal"}]}, {"id": "x7k9m5j", "time": "EVENING", "tasks": [{"id": "xdxj7g7", "text": "AP", "cat": "personal"}]}], "note": ""}, "2026-04-26": {"slots": [{"id": "x9jp8ty", "time": "2-3 PM", "tasks": [{"id": "xrulsok", "text": "Cake arrives", "cat": "personal"}]}, {"id": "xoku6hb", "time": "4-8 PM", "tasks": [{"id": "xko12o3", "text": "Abe Bday Park hang", "cat": "personal"}]}], "note": ""}, "2026-04-27": {"slots": [{"id": "xl9t6bj", "time": null, "tasks": [{"id": "x5j0aax", "text": "Send note to leave coverage team", "cat": "done"}, {"id": "xy66nbc", "text": "SW Notes", "cat": "done"}]}, {"id": "xqokqkm", "time": "Before Class", "tasks": [{"id": "xt82s61", "text": "Submit Role Play assessment", "cat": "done"}]}, {"id": "xxux7pf", "time": "6:30-9", "tasks": [{"id": "xks43t9", "text": "Class", "cat": "external"}]}], "note": ""}, "2026-04-28": {"slots": [{"id": "xtoday1", "time": "TODAY - URGENT", "tasks": [{"id": "xt1a", "text": "Make Abe lunch graduation reservation", "cat": "urgent"}, {"id": "xt1b", "text": "CS H1 PBC options brief", "cat": "work"}, {"id": "xt1c", "text": "Reschedule dermatologist", "cat": "quick"}, {"id": "xt1d", "text": "Set up Q2 goal setting + sprint planning session", "cat": "work"}]}, {"id": "xtoday2", "time": null, "tasks": [{"id": "xt2a", "text": "Succession Planning Synthesis", "cat": "work"}]}], "note": ""}, "2026-04-29": {"slots": [{"id": "xtom1", "time": "TOMORROW", "tasks": [{"id": "xto1", "text": "Update SW notes (based on feedback)", "cat": "practicum"}, {"id": "xto2", "text": "Social crisis framework updates", "cat": "work"}]}], "note": ""}, "2026-04-30": {"slots": [{"id": "xcno0fy", "time": "EVENING", "tasks": [{"id": "xkh4yz8", "text": "Dinner with mom", "cat": "personal"}]}], "note": ""}, "2026-05-01": {"slots": [], "note": ""}, "2026-05-02": {"slots": [], "note": ""}, "2026-05-03": {"slots": [], "note": ""}}, "upcoming": [{"id": "x6finb6", "date": "April 27", "items": [{"id": "xnms3kj", "text": "Role Play Assessment Due", "note": ""}]}, {"id": "x5b15jq", "date": "April 29", "items": [{"id": "xtaq70w", "text": "Abe birthday", "note": ""}]}, {"id": "xr5dxuf", "date": "May 5", "items": [{"id": "xl8wfs3", "text": "Practicum Ends", "note": "Schedule Abi and Katy"}]}, {"id": "xtew5mp", "date": "May 10", "items": [{"id": "xguuzia", "text": "Mother's Day \ud83c\udf38", "note": ""}]}, {"id": "xwbs2o0", "date": "May 11", "items": [{"id": "xm0f67o", "text": "Groups Final Due", "note": ""}]}, {"id": "xu5eo2w", "date": "May 15", "items": [{"id": "xixeut5", "text": "Abby & husband wedding gift", "note": "~2 weeks to make \u2192 start by May 15"}]}, {"id": "xm8nef2", "date": "May 18", "items": [{"id": "x2h8lun", "text": "Set up supervision with Meredith", "note": ""}]}, {"id": "x10m0za", "date": "May 30", "items": [{"id": "x3kb5bi", "text": "Schedule gardening", "note": ""}]}, {"id": "xi0x0m7", "date": "June 1", "items": [{"id": "xrzjd9s", "text": "Book Peachy Appt before 7/16", "note": ""}]}, {"id": "xup01", "date": "May 2026", "items": [{"id": "xup01a", "text": "Set up mid-sprint check-in for May", "note": ""}]}, {"id": "xup02", "date": "May 28", "items": [{"id": "xup02a", "text": "Figure out onsite day with team", "note": ""}]}, {"id": "xup03", "date": "Q2", "items": [{"id": "xup03a", "text": "Regional transition governance", "note": ""}, {"id": "xup03b", "text": "Find out when budgeting happens for leave data dashboard + analysis for leaders", "note": "H2 target"}]}, {"id": "xup04", "date": "TBD", "items": [{"id": "xup04a", "text": "Finish cross stitch for niece", "note": "Before baptism \u2014 date unknown"}, {"id": "xup04b", "text": "Research Portugal trip", "note": ""}, {"id": "xup04c", "text": "Reach out to David about London trip", "note": ""}]}], "thisWeek": {"2026-04-13": [{"id": "x11kn70", "text": "Baby gift", "done": true}, {"id": "xsvimk7", "text": "Book derm", "done": true}, {"id": "xn5yocp", "text": "Hair appt", "done": true}], "2026-04-20": [{"id": "xgnddlt", "text": "Abe bday gift", "done": true}, {"id": "xbxi987", "text": "Schedule onsite", "done": true}, {"id": "xxftj0o", "text": "Order cake", "done": true}], "2026-04-27": [{"id": "x2na6fs", "text": "Book annual physical and sinus check", "done": false}, {"id": "xtug18l", "text": "abe grad", "done": false}, {"id": "xb96usb", "text": "reschedule glassblowing", "done": false}, {"id": "xuyqlmo", "text": "Exec relo package", "done": false}, {"id": "xgshols", "text": "Spring wardrobe", "done": false}, {"id": "xkzou83", "text": "Update SW notes", "done": false}, {"id": "xdb7t72", "text": "Reach out to Carla and Amia", "done": false}, {"id": "x2pwt6e", "text": "Place wedding album order", "done": false}, {"id": "xnw01", "text": "Get another volunteer for leave coverage planning synthesis", "done": false}, {"id": "xnw02", "text": "Set up time with regional directors on leave coverage", "done": false}, {"id": "xnw03", "text": "Figure out how to involve PBPs in regional director conversation", "done": false}, {"id": "xnw04", "text": "Check if Deb & Mary global learning stipend calendar invite sent (if not, reach out)", "done": false}, {"id": "xnw05", "text": "Reach out to families \u2014 letting them know you're leaving practicum", "done": false}, {"id": "xnw06", "text": "Respond to Vanessa", "done": false}, {"id": "xnw07", "text": "See whether you can cancel Carmine dinner reservation", "done": false}, {"id": "xnw08", "text": "Create Jira ticket \u2014 transitioning PBC leave process to comp team", "done": false}, {"id": "xnw09", "text": "Create Jira ticket \u2014 operationalization of Japan parental leave enhancements", "done": false}, {"id": "xnw10", "text": "Book London lodging", "done": false}, {"id": "xnw11", "text": "Book Portugal lodging", "done": false}, {"id": "xnw12", "text": "Research before Lauren meeting on exec relocation package", "done": false}, {"id": "xnw13", "text": "\u23f8 BLOCKED: Relocation address change \u2014 waiting on payroll examples", "done": false}, {"id": "xnw14", "text": "\u23f8 Set up Tenaya to drive Workday (get Shay off it)", "done": false}, {"id": "xnw15", "text": "\u23f8 Follow up with Hanhe + Ellie \u2014 team wellness day (Australia issues)", "done": false}]}, "windowStart": "2026-04-28", "watching": [{"id":"xw01","text":"Relocation address change — waiting on examples from payroll"},{"id":"xw02","text":"Set up Tenaya to drive Workday (get Shay off it)"},{"id":"xw03","text":"Follow up with Hanhe + Ellie — team wellness day (Australia issues)"},{"id":"xw04","text":"Leave data dashboard — clean up data + find out when H2 budgeting happens"},{"id":"xw05","text":"Regional transition governance — needs to get going in Q2"}]};
 
 let aForm=null,drag=null,upDrag=null,twForm=null,crossDrag=null,upToDayDrag=null;
 
@@ -296,6 +327,18 @@ function load(){
           store.days[k]=EMBEDDED_STORE.days[k];
         }
       });
+      // Merge thisWeek — add new items not already present
+      Object.keys(EMBEDDED_STORE.thisWeek||{}).forEach(mon=>{
+        if(!store.thisWeek)store.thisWeek={};
+        if(!store.thisWeek[mon])store.thisWeek[mon]=[];
+        const existingIds=new Set(store.thisWeek[mon].map(t=>t.id));
+        (EMBEDDED_STORE.thisWeek[mon]||[]).forEach(t=>{if(!existingIds.has(t.id))store.thisWeek[mon].push(t);});
+      });
+      // Merge upcoming — add new items not already present
+      const existingUpIds=new Set((store.upcoming||[]).map(u=>u.id));
+      (EMBEDDED_STORE.upcoming||[]).forEach(u=>{if(!existingUpIds.has(u.id))store.upcoming.push(u);});
+      // Merge watching — add if not present
+      if(!store.watching||store.watching.length===0)store.watching=EMBEDDED_STORE.watching||[];
     } else {
       store=JSON.parse(JSON.stringify(EMBEDDED_STORE));
     }
@@ -327,7 +370,189 @@ function shift(n){const d=pk(store.windowStart);d.setDate(d.getDate()+n);store.w
 function jumpToday(){store.windowStart=fk(new Date());save();render();}
 function sortUpcoming(){store.upcoming.sort((a,b)=>{const da=pd(a.date),db=pd(b.date);if(!da&&!db)return 0;if(!da)return 1;if(!db)return -1;return da-db;});}
 
-function render(){rLeg();rDays();rThisWeek();rUp();}
+function render(){rLeg();rDays();rThisWeek();rWatching();rUp();}
+
+// ---- Quick Add ----
+const DAY_MAP={sunday:0,monday:1,tuesday:2,wednesday:3,thursday:4,friday:5,saturday:6,sun:0,mon:1,tue:2,wed:3,thu:4,fri:5,sat:6,today:null,tomorrow:null};
+const CAT_MAP={work:'work',school:'practicum',practicum:'gs',personal:'personal',urgent:'urgent',quick:'quick',errand:'quick',gs:'gs'};
+
+function quickAdd(){
+  const inp=document.getElementById('qa-input');
+  const fb=document.getElementById('qa-feedback');
+  const raw=inp.value.trim();
+  if(!raw){return;}
+  const lower=raw.toLowerCase();
+  const words=lower.split(/\s+/);
+
+  // Find day
+  let targetIso=null,dayFound=false;
+  for(let i=0;i<words.length;i++){
+    const w=words[i];
+    if(w==='today'){targetIso=fk(new Date());dayFound=true;words.splice(i,1);break;}
+    if(w==='tomorrow'){const d=new Date();d.setDate(d.getDate()+1);targetIso=fk(d);dayFound=true;words.splice(i,1);break;}
+    if(DAY_MAP[w]!==undefined&&w!=='today'&&w!=='tomorrow'){
+      const targetDow=DAY_MAP[w];
+      const today=new Date();today.setHours(0,0,0,0);
+      const todayDow=today.getDay();
+      let diff=targetDow-todayDow;
+      if(diff<=0)diff+=7;
+      const d=new Date(today);d.setDate(d.getDate()+diff);
+      targetIso=fk(d);dayFound=true;words.splice(i,1);break;
+    }
+  }
+
+  if(!targetIso){
+    fb.textContent='Could not find a day — try "thursday 4pm meeting work"';
+    fb.className='quickadd-feedback err';
+    setTimeout(()=>fb.className='quickadd-feedback',3000);
+    return;
+  }
+
+  // Find time
+  let time=null;
+  const timeRe=/^(\d{1,2})(?::(\d{2}))?(am|pm)?$/i;
+  for(let i=0;i<words.length;i++){
+    const m=words[i].match(timeRe);
+    if(m){
+      let h=parseInt(m[1]),mn=m[2]?parseInt(m[2]):0,ampm=(m[3]||'').toLowerCase();
+      if(ampm==='pm'&&h<12)h+=12;
+      if(ampm==='am'&&h===12)h=0;
+      time=h+':'+(mn<10?'0':'')+mn;
+      // Check next word for end time like "4-5pm" or "4pm-5pm"
+      words.splice(i,1);break;
+    }
+    // handle "4-5pm" or "4:30-5pm"
+    const rangeRe=/^(\d{1,2}(?::\d{2})?(?:am|pm)?)-(\d{1,2}(?::\d{2})?(?:am|pm)?)$/i;
+    const rm=words[i].match(rangeRe);
+    if(rm){time=words[i];words.splice(i,1);break;}
+  }
+
+  // Find category (last word if matches)
+  let cat='work';
+  const lastWord=words[words.length-1];
+  if(lastWord&&CAT_MAP[lastWord]){cat=CAT_MAP[lastWord];words.pop();}
+
+  // Remaining = task text (use original casing from raw)
+  // Reconstruct from original words by removing matched tokens
+  let taskText=raw;
+  // Strip day word
+  const dayWords=Object.keys(DAY_MAP);
+  for(const dw of dayWords){const re=new RegExp('\\b'+dw+'\\b','i');taskText=taskText.replace(re,'');}
+  // Strip time
+  if(time){taskText=taskText.replace(/\b\d{1,2}(?::\d{2})?(?:am|pm)?(?:-\d{1,2}(?::\d{2})?(?:am|pm)?)?\b/i,'');}
+  // Strip category
+  for(const ck of Object.keys(CAT_MAP)){const re=new RegExp('\\b'+ck+'\\b$','i');taskText=taskText.replace(re,'');}
+  taskText=taskText.replace(/\s+/g,' ').trim();
+  if(!taskText)taskText='Task';
+
+  // Find or create slot for this time
+  const slots=gsa(targetIso);
+  let slot=time?slots.find(s=>s.time===time):null;
+  if(!slot){
+    slot={id:uid(),time:time||null,tasks:[]};
+    slots.push(slot);
+  }
+  slot.tasks.push({id:uid(),text:taskText,cat});
+
+  inp.value='';
+  const dayName2=dayName(targetIso);
+  fb.textContent=`Added "${taskText}" to ${dayName2}${time?' at '+time:''}`;
+  fb.className='quickadd-feedback ok';
+  setTimeout(()=>fb.className='quickadd-feedback',3000);
+  save();rDays();
+}
+
+// ---- Carry-over ----
+function carryOver(mon){
+  const items=getTW(mon)||[];
+  const unchecked=items.filter(t=>!t.done);
+  if(!unchecked.length){alert('No unchecked items to carry over!');return;}
+  // Find next Monday
+  const d=pk(mon);d.setDate(d.getDate()+7);
+  const nextMon=fk(d);
+  const nextTW=getTW(nextMon);
+  unchecked.forEach(t=>nextTW.push({id:uid(),text:t.text,done:false}));
+  // Mark as carried in current week
+  store.thisWeek[mon]=items.map(t=>t.done?t:{...t,text:t.text+' ↗',done:true});
+  save();rThisWeek();
+}
+
+// ---- Watching ----
+function rWatching(){
+  if(!store.watching)store.watching=[];
+  const grid=document.getElementById('watching-grid');
+  let html=store.watching.map(w=>`
+    <div class="watching-item" draggable="true" data-watch-id="${w.id}">
+      <div class="watching-dot"></div>
+      <span class="watching-text" ondblclick="editWatching(this,'${w.id}')">${w.text}</span>
+      <span class="watching-del" onclick="delWatching('${w.id}')">✕</span>
+    </div>`).join('');
+  html+=`<div class="watching-add-wrap" onclick="addWatching()">+ add item to watch</div>`;
+  grid.innerHTML=html;
+  bindWatchDrag();
+}
+function addWatching(){
+  const text=window.prompt('What are you watching/waiting on?');
+  if(!text||!text.trim())return;
+  if(!store.watching)store.watching=[];
+  store.watching.push({id:uid(),text:text.trim()});
+  save();rWatching();
+}
+function editWatching(span,id){
+  const w=(store.watching||[]).find(x=>x.id===id);if(!w)return;
+  const inp=document.createElement('input');
+  inp.style.cssText='flex:1;font-size:11px;border:none;background:transparent;color:inherit;outline:none;min-width:0;width:100%';
+  inp.value=w.text;span.replaceWith(inp);inp.focus();inp.select();
+  inp.addEventListener('blur',()=>{w.text=inp.value.trim()||w.text;save();rWatching();});
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter')inp.blur();if(e.key==='Escape')rWatching();});
+}
+function delWatching(id){
+  store.watching=(store.watching||[]).filter(x=>x.id!==id);save();rWatching();
+}
+
+let watchDrag=null;
+function bindWatchDrag(){
+  document.querySelectorAll('[data-watch-id]').forEach(el=>{
+    el.addEventListener('dragstart',e=>{
+      watchDrag=el.dataset.watchId;
+      el.classList.add('watch-dragging');
+      e.dataTransfer.effectAllowed='move';
+      e.stopPropagation();
+    });
+    el.addEventListener('dragend',()=>{
+      el.classList.remove('watch-dragging');
+      document.querySelectorAll('.day-tw-drop-over,.tw-drop-over,.up-day-drop-over').forEach(x=>x.classList.remove('day-tw-drop-over','tw-drop-over','up-day-drop-over'));
+      watchDrag=null;
+    });
+  });
+  // Drop onto day columns
+  document.querySelectorAll('[data-iso]').forEach(el=>{
+    el.addEventListener('dragover',e=>{if(!watchDrag)return;e.preventDefault();el.classList.add('day-tw-drop-over');});
+    el.addEventListener('dragleave',e=>{if(!el.contains(e.relatedTarget))el.classList.remove('day-tw-drop-over');});
+    el.addEventListener('drop',e=>{
+      e.preventDefault();el.classList.remove('day-tw-drop-over');if(!watchDrag)return;
+      const w=(store.watching||[]).find(x=>x.id===watchDrag);if(!w)return;
+      const iso=el.dataset.iso,slots=gsa(iso);
+      const task={id:uid(),text:w.text,cat:'work'};
+      if(slots.length>0){slots[slots.length-1].tasks.push(task);}
+      else{slots.push({id:uid(),time:null,tasks:[task]});}
+      store.watching=store.watching.filter(x=>x.id!==watchDrag);
+      watchDrag=null;save();rDays();rWatching();
+    });
+  });
+  // Drop onto this-week boxes
+  document.querySelectorAll('[data-tw-box]').forEach(el=>{
+    el.addEventListener('dragover',e=>{if(!watchDrag)return;e.preventDefault();el.classList.add('tw-drop-over');});
+    el.addEventListener('dragleave',e=>{if(!el.contains(e.relatedTarget))el.classList.remove('tw-drop-over');});
+    el.addEventListener('drop',e=>{
+      e.preventDefault();el.classList.remove('tw-drop-over');if(!watchDrag)return;
+      const w=(store.watching||[]).find(x=>x.id===watchDrag);if(!w)return;
+      getTW(el.dataset.twBox).push({id:uid(),text:w.text,done:false});
+      store.watching=store.watching.filter(x=>x.id!==watchDrag);
+      watchDrag=null;save();rThisWeek();rWatching();
+    });
+  });
+}
 
 function rLeg(){
   document.getElementById('legend').innerHTML=Object.entries(CC).filter(([k])=>k!=='moved'&&k!=='flex'&&k!=='done').map(([k,v])=>
@@ -417,7 +642,7 @@ function rThisWeek(){
       ?`<div class="tw-inline-form"><input type="text" id="tw-inp-${g.mon}" placeholder="Add task for this week\u2026" onkeydown="if(event.key==='Enter')twCommit('${g.mon}');if(event.key==='Escape')twCancel()"/><button class="primary" onclick="twCommit('${g.mon}')">Add</button><button onclick="twCancel()">&#10005;</button></div>`
       :`<div class="tw-add-btn" onclick="twOpen('${g.mon}')">+ add</div>`;
     html+=`<div class="thisweek-box" data-tw-box="${g.mon}" style="grid-column:span ${g.span}">
-      <div class="thisweek-hdr"><span class="thisweek-title">This week</span><span class="thisweek-dates">${label}</span></div>
+      <div class="thisweek-hdr"><span class="thisweek-title">This week</span><span style="display:flex;align-items:center;gap:8px"><span class="thisweek-dates">${label}</span><button class="carryover-btn" onclick="carryOver('${g.mon}')">carry over →</button></span></div>
       <div class="thisweek-body">${tasksHtml}</div>${formHtml}</div>`;
   });
   grid.innerHTML=html;
