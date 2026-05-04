@@ -128,8 +128,9 @@ body{font-family:var(--font-sans);background:var(--color-background-secondary);f
 .cat-pill{display:inline-flex;align-items:center;gap:3px;padding:1px 5px;border-radius:10px;font-size:9px;font-weight:500;cursor:pointer;flex-shrink:0;white-space:nowrap;border:0.5px solid;position:relative;user-select:none}
 .cat-pill .cat-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
 .cat-pill .cat-label{overflow:hidden;max-width:60px;text-overflow:ellipsis;white-space:nowrap}
-.cat-pill .cat-drop{position:absolute;top:100%;right:0;z-index:100;background:var(--color-background-primary);border:0.5px solid var(--color-border-secondary);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);padding:4px;min-width:120px;display:none}
-.cat-pill:hover .cat-drop,.cat-pill.open .cat-drop{display:block}
+.cat-pill .cat-drop{position:absolute;top:100%;right:0;z-index:200;background:var(--color-background-primary);border:0.5px solid var(--color-border-secondary);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.15);padding:4px;min-width:130px;display:none}
+.cat-pill.open .cat-drop{display:block}
+.cat-pill.drop-left .cat-drop{right:auto;left:0}
 .cat-drop-item{padding:5px 10px;border-radius:5px;font-size:11px;cursor:pointer;display:flex;align-items:center;gap:6px;color:var(--color-text-primary)}
 .cat-drop-item:hover{background:var(--color-background-secondary)}
 .cat-drop-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
@@ -304,18 +305,27 @@ function catPill(cat,callbackName,callbackArgs){
 
 function bindCatPills(){
   document.querySelectorAll('[data-cat-pill]').forEach(pill=>{
-    pill.addEventListener('click',e=>{e.stopPropagation();pill.classList.toggle('open');});
+    pill.addEventListener('click',e=>{
+      e.stopPropagation();
+      const wasOpen=pill.classList.contains('open');
+      document.querySelectorAll('.cat-pill.open').forEach(p=>p.classList.remove('open'));
+      if(!wasOpen){
+        pill.classList.add('open');
+        // Flip left if near right edge
+        const rect=pill.getBoundingClientRect();
+        pill.classList.toggle('drop-left', rect.right + 140 > window.innerWidth);
+      }
+    });
   });
   document.querySelectorAll('.cat-drop-item').forEach(item=>{
     item.addEventListener('click',e=>{
       e.stopPropagation();
-      const cat=item.dataset.cat,cb=item.dataset.cb,args=item.dataset.args;
+      const cat=item.dataset.cat,cb=item.dataset.cb;
+      const args=item.dataset.args.split('||');
       const pill=item.closest('.cat-pill');if(pill)pill.classList.remove('open');
-      // Call the right setter
-      const parts=args.split('|');
-      if(cb==='twSetCat')twSetCat(parts[0],parts[1],cat);
-      else if(cb==='watchSetCat')watchSetCat(parts[0],cat);
-      else if(cb==='upSetCat')upSetCat(parts[0],parts[1],cat);
+      if(cb==='twSetCat')twSetCat(args[0],args[1],cat);
+      else if(cb==='watchSetCat')watchSetCat(args[0],cat);
+      else if(cb==='upSetCat')upSetCat(args[0],args[1],cat);
     });
   });
 }
@@ -811,7 +821,7 @@ function rThisWeek(){
       <div class="tw-item" draggable="true" data-tw-mon="${g.mon}" data-tw-id="${t.id}">
         <input type="checkbox" ${t.done?'checked':''} onchange="twToggle('${g.mon}','${t.id}',this.checked)"/>
         <span class="tw-item-text${t.done?' done-text':''}" ondblclick="twEdit(this,'${g.mon}','${t.id}')">${t.carriedOver?'<span style="font-size:9px;color:#BA7517;margin-right:3px" title="Carried over">↗</span>':''}${t.text}</span>
-        ${catPill(t.cat||'work','twSetCat',`${g.mon}|${t.id}`)}
+        ${catPill(t.cat||'work','twSetCat',`${g.mon}||${t.id}`)}
         <span class="tw-del" onclick="twDel('${g.mon}','${t.id}')">&#10005;</span>
       </div>`).join('');
     const formHtml=twForm===g.mon
@@ -837,7 +847,7 @@ function rUp(){
         <span><span class="up-item-text" ondblclick="eUpText(this,'${u.id}','${it.id}')">${it.text}</span>
         ${it.note?`<span class="up-note" ondblclick="eUpNote(this,'${u.id}','${it.id}')">${it.note}</span>`:`<span class="up-note" style="opacity:.3;font-style:italic" ondblclick="eUpNote(this,'${u.id}','${it.id}')">add note\u2026</span>`}</span>
         <span style="display:flex;align-items:center;gap:4px;flex-shrink:0">
-          ${catPill(it.cat||'urgent','upSetCat',`${u.id}|${it.id}`)}
+          ${catPill(it.cat||'urgent','upSetCat',`${u.id}||${it.id}`)}
           <span class="up-del" onclick="delUp('${u.id}','${it.id}')">&#10005;</span>
         </span>
       </div>`).join('')}
