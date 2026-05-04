@@ -127,10 +127,12 @@ body{font-family:var(--font-sans);background:var(--color-background-secondary);f
 /* Custom category pill - always visible, collapses to dot when narrow */
 .cat-pill{display:inline-flex;align-items:center;gap:3px;padding:1px 5px;border-radius:10px;font-size:9px;font-weight:500;cursor:pointer;flex-shrink:0;white-space:nowrap;border:0.5px solid;position:relative;user-select:none}
 .cat-pill .cat-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.cat-pill:not(:has(.cat-label)) .cat-dot,.cat-pill:has(.cat-label:empty) .cat-dot{width:10px;height:10px}
 .cat-pill .cat-label{overflow:hidden;max-width:60px;text-overflow:ellipsis;white-space:nowrap}
 .cat-pill .cat-drop{position:absolute;top:100%;right:0;z-index:200;background:var(--color-background-primary);border:0.5px solid var(--color-border-secondary);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.15);padding:4px;min-width:130px;display:none}
 .cat-pill.open .cat-drop{display:block}
 .cat-pill.drop-left .cat-drop{right:auto;left:0}
+.cat-pill.drop-up .cat-drop{top:auto;bottom:100%}
 .cat-drop-item{padding:5px 10px;border-radius:5px;font-size:11px;cursor:pointer;display:flex;align-items:center;gap:6px;color:var(--color-text-primary)}
 .cat-drop-item:hover{background:var(--color-background-secondary)}
 .cat-drop-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
@@ -291,29 +293,33 @@ const EMBEDDED_STORE = {"days": {"2026-04-16": {"slots": [{"id": "x5xn41r", "tim
 
 let aForm=null,drag=null,upDrag=null,twForm=null,crossDrag=null,upToDayDrag=null;
 
-function catPill(cat,callbackName,callbackArgs){
+function catPill(cat,callbackName,callbackArgs,dotOnly,alwaysUp){
   const color=CC[cat]||'#888';
   const label=CATS[cat]||cat;
   const items=Object.entries(CATS).filter(([k])=>k!=='done'&&k!=='moved'&&k!=='external')
     .map(([k,v])=>`<div class="cat-drop-item" data-cat="${k}" data-cb="${callbackName}" data-args="${callbackArgs}"><div class="cat-drop-dot" style="background:${CC[k]||'#888'}"></div>${v}</div>`).join('');
-  return `<span class="cat-pill chip cat-${cat}" data-cat-pill="1" title="${label}">
+  const extraClass=(alwaysUp?' drop-up':'');
+  return `<span class="cat-pill chip cat-${cat}${extraClass}" data-cat-pill="1" title="${label}">
     <span class="cat-dot" style="background:${color}"></span>
-    <span class="cat-label">${label}</span>
+    ${dotOnly?'':'<span class="cat-label">'+label+'</span>'}
     <div class="cat-drop">${items}</div>
   </span>`;
 }
 
 function bindCatPills(){
   document.querySelectorAll('[data-cat-pill]').forEach(pill=>{
-    pill.addEventListener('click',e=>{
+    // Remove old listener by replacing with clone
+    const clone=pill.cloneNode(true);
+    pill.parentNode.replaceChild(clone,pill);
+    clone.addEventListener('click',e=>{
       e.stopPropagation();
-      const wasOpen=pill.classList.contains('open');
+      const wasOpen=clone.classList.contains('open');
       document.querySelectorAll('.cat-pill.open').forEach(p=>p.classList.remove('open'));
       if(!wasOpen){
-        pill.classList.add('open');
-        // Flip left if near right edge
-        const rect=pill.getBoundingClientRect();
-        pill.classList.toggle('drop-left', rect.right + 140 > window.innerWidth);
+        clone.classList.add('open');
+        const rect=clone.getBoundingClientRect();
+        clone.classList.toggle('drop-left', rect.right + 140 > window.innerWidth);
+        clone.classList.toggle('drop-up', rect.bottom + 220 > window.innerHeight);
       }
     });
   });
@@ -657,7 +663,7 @@ function rWatching(){
     </div>`).join('');
   html+=`<div class="watching-add-wrap" onclick="addWatching()">+ add to radar</div>`;
   grid.innerHTML=html;
-  bindWatchDrag();
+  bindWatchDrag();setTimeout(bindCatPills,10);
 }
 function addWatching(){
   const text=window.prompt('What are you watching/waiting on?');
@@ -821,7 +827,7 @@ function rThisWeek(){
       <div class="tw-item" draggable="true" data-tw-mon="${g.mon}" data-tw-id="${t.id}">
         <input type="checkbox" ${t.done?'checked':''} onchange="twToggle('${g.mon}','${t.id}',this.checked)"/>
         <span class="tw-item-text${t.done?' done-text':''}" ondblclick="twEdit(this,'${g.mon}','${t.id}')">${t.carriedOver?'<span style="font-size:9px;color:#BA7517;margin-right:3px" title="Carried over">↗</span>':''}${t.text}</span>
-        ${catPill(t.cat||'work','twSetCat',`${g.mon}||${t.id}`)}
+        ${catPill(t.cat||'work','twSetCat',`${g.mon}||${t.id}`,false,true)}
         <span class="tw-del" onclick="twDel('${g.mon}','${t.id}')">&#10005;</span>
       </div>`).join('');
     const formHtml=twForm===g.mon
@@ -833,7 +839,7 @@ function rThisWeek(){
   });
   grid.innerHTML=html;
   if(twForm){setTimeout(()=>{const el=document.getElementById('tw-inp-'+twForm);if(el)el.focus();},30);}
-  bindCrossDrag();bindWatchDrag();
+  bindCrossDrag();bindWatchDrag();setTimeout(bindCatPills,10);
 }
 
 function rUp(){
@@ -847,7 +853,7 @@ function rUp(){
         <span><span class="up-item-text" ondblclick="eUpText(this,'${u.id}','${it.id}')">${it.text}</span>
         ${it.note?`<span class="up-note" ondblclick="eUpNote(this,'${u.id}','${it.id}')">${it.note}</span>`:`<span class="up-note" style="opacity:.3;font-style:italic" ondblclick="eUpNote(this,'${u.id}','${it.id}')">add note\u2026</span>`}</span>
         <span style="display:flex;align-items:center;gap:4px;flex-shrink:0">
-          ${catPill(it.cat||'urgent','upSetCat',`${u.id}||${it.id}`)}
+          ${catPill(it.cat||'urgent','upSetCat',`${u.id}||${it.id}`,true,false)}
           <span class="up-del" onclick="delUp('${u.id}','${it.id}')">&#10005;</span>
         </span>
       </div>`).join('')}
@@ -855,7 +861,7 @@ function rUp(){
   });
   html+=`<div class="up-drop-zone" data-up-dz="${cards.length}"></div>`;
   document.getElementById('upcoming-grid').innerHTML=html;
-  bindUpDrag();bindUpToDay();
+  bindUpDrag();bindUpToDay();setTimeout(bindCatPills,10);
 }
 
 function wF(){
