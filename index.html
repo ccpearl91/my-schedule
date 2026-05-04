@@ -92,6 +92,8 @@ body{font-family:var(--font-sans);background:var(--color-background-secondary);f
 .chip:hover .chip-btns{opacity:1}
 .chip-btn{font-size:9px;cursor:pointer;padding:0 2px;line-height:1.4;border-radius:2px}
 .chip-btn:hover{background:rgba(0,0,0,.08)}
+.chip-cat-sel{font-size:9px;border:none;background:transparent;color:inherit;cursor:pointer;padding:0 1px;opacity:0;max-width:0;transition:all .15s;outline:none}
+.chip:hover .chip-cat-sel{opacity:1;max-width:80px}
 .done-btn{font-size:10px;color:#2A9D8F;font-weight:600}
 .edit-input{font-size:10px;flex:1;border:none;background:transparent;color:inherit;outline:none;min-width:0}
 .add-day-btn{font-size:9px;color:var(--color-text-tertiary);cursor:pointer;padding:3px 6px;border-radius:4px;border:0.5px dashed var(--color-border-tertiary);text-align:center;margin:2px 6px 6px;transition:all .15s}
@@ -120,6 +122,8 @@ body{font-family:var(--font-sans);background:var(--color-background-secondary);f
 .tw-item-text{flex:1;line-height:1.4;cursor:text}
 .tw-item-text.done-text{text-decoration:line-through;color:var(--color-text-tertiary)}
 .tw-del{font-size:9px;color:var(--color-text-tertiary);cursor:pointer;opacity:0;flex-shrink:0}
+.tw-cat-sel{font-size:9px;border:none;background:transparent;color:inherit;cursor:pointer;outline:none;flex-shrink:0;padding:2px 4px;border-radius:10px;border-left:2px solid;max-width:90px}
+.tw-item:hover .tw-cat-sel{opacity:1}
 .tw-item:hover .tw-del{opacity:.5}
 .tw-add-btn{font-size:9px;color:var(--color-text-tertiary);cursor:pointer;padding:3px 6px;border-radius:4px;border:0.5px dashed var(--color-border-tertiary);text-align:center;margin:2px 2px 4px;transition:all .15s}
 .tw-add-btn:hover{background:var(--color-background-secondary);color:var(--color-text-secondary)}
@@ -168,6 +172,8 @@ body{font-family:var(--font-sans);background:var(--color-background-secondary);f
 .watching-item{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:8px;padding:7px 10px;display:flex;align-items:flex-start;gap:8px;font-size:11px;color:var(--color-text-primary);min-width:180px;flex:1;cursor:grab}
 .watching-item:active{cursor:grabbing;opacity:.6}
 .watching-item.watch-dragging{opacity:.3}
+.day-col.watch-day-over{outline:2px dashed #BA7517;background:rgba(186,117,23,0.05)}
+.thisweek-box.watch-tw-over{outline:2px dashed #BA7517;background:rgba(186,117,23,0.05)}
 .watching-dot{width:7px;height:7px;border-radius:50%;background:#BA7517;flex-shrink:0;margin-top:3px}
 .watching-text{flex:1;cursor:text;line-height:1.4}
 .watching-del{font-size:9px;color:var(--color-text-tertiary);cursor:pointer;opacity:0;flex-shrink:0}
@@ -176,6 +182,20 @@ body{font-family:var(--font-sans);background:var(--color-background-secondary);f
 .watching-add-wrap:hover{color:var(--color-text-secondary);background:var(--color-background-secondary)}
 .carryover-btn{font-size:10px;padding:4px 10px;border-radius:6px;border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-secondary);cursor:pointer;white-space:nowrap}
 .carryover-btn:hover{background:var(--color-background-secondary);color:var(--color-text-primary)}
+.recurring-wrap{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:10px;overflow:hidden;margin-bottom:10px}
+.recurring-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:0.5px solid var(--color-border-tertiary);font-size:11px;color:var(--color-text-primary)}
+.recurring-item:last-child{border-bottom:none}
+.recurring-day{font-size:10px;font-weight:500;color:var(--color-text-secondary);min-width:80px}
+.recurring-time{font-size:10px;color:var(--color-text-tertiary);min-width:80px}
+.recurring-text{flex:1}
+.recurring-cat{font-size:9px;padding:2px 6px;border-radius:10px;border-left:2px solid}
+.recurring-del{font-size:9px;color:var(--color-text-tertiary);cursor:pointer;opacity:0;margin-left:4px}
+.recurring-item:hover .recurring-del{opacity:.6}
+.recurring-add{padding:8px 12px;font-size:11px;color:var(--color-text-tertiary);cursor:pointer;border-top:0.5px dashed var(--color-border-tertiary)}
+.recurring-add:hover{color:var(--color-text-secondary);background:var(--color-background-secondary)}
+.recurring-form{padding:10px 12px;border-top:0.5px solid var(--color-border-tertiary);display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.recurring-form input,.recurring-form select{font-size:11px;padding:5px 8px;border-radius:6px;border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);color:var(--color-text-primary)}
+.recurring-form input:focus,.recurring-form select:focus{outline:none;border-color:var(--color-border-primary)}
 </style>
 </head>
 <body>
@@ -205,8 +225,8 @@ body{font-family:var(--font-sans);background:var(--color-background-secondary);f
   <div class="days-grid" id="days-grid"></div>
   <div class="thisweek-grid" id="thisweek-grid"></div>
   <div class="section-label" style="display:flex;align-items:center;justify-content:space-between">
-    <span>Watching</span>
-    <span style="font-size:10px;color:var(--color-text-tertiary);font-weight:400;text-transform:none;letter-spacing:0">things to keep an eye on — no deadline</span>
+    <span>Keep on my radar</span>
+    <span style="font-size:10px;color:var(--color-text-tertiary);font-weight:400;text-transform:none;letter-spacing:0">waiting · future you · don't forget</span>
   </div>
   <div class="watching-grid" id="watching-grid"></div>
   <div class="section-label">Coming up</div>
@@ -223,6 +243,11 @@ body{font-family:var(--font-sans);background:var(--color-background-secondary);f
       </div>
     </div>
   </div>
+  <div class="section-label" style="display:flex;align-items:center;justify-content:space-between">
+    <span>Recurring</span>
+    <span style="font-size:10px;color:var(--color-text-tertiary);font-weight:400;text-transform:none;letter-spacing:0">auto-populates into days as you scroll forward</span>
+  </div>
+  <div id="recurring-list"></div>
 </div>
 <script>
 const CATS={work:'Work',practicum:'School',personal:'Personal',urgent:'Urgent',gs:'Practicum',quick:'Quick errand',external:'Fixed event',flex:'Buffer',done:'Done',moved:'Deferred'};
@@ -246,7 +271,7 @@ const CLIENT_ID='270499684961-ckdogm7aoou3mbtvc2f73g5tkfh52a5c.apps.googleuserco
 const SCOPE='https://www.googleapis.com/auth/drive.file';
 const FNAME='caroline-schedule.json';
 let gToken=null,driveFileId=null,saveTimer=null;
-let store={days:{},upcoming:[],thisWeek:{},watching:[],windowStart:fk(new Date())};
+let store={days:{},upcoming:[],thisWeek:{},watching:[],recurring:[],windowStart:fk(new Date())};
 
 // ---- Embedded initial data (brain dump update) ----
 const EMBEDDED_STORE = {"days": {"2026-04-16": {"slots": [{"id": "x5xn41r", "time": null, "tasks": [{"id": "xdvqykp", "text": "send note to leave coverage team", "cat": "done"}]}, {"id": "x844ly1", "time": "4:30-7:30", "tasks": [{"id": "xowm291", "text": "Practicum", "cat": "external"}]}, {"id": "xlos6dg", "time": "After Practicum", "tasks": [{"id": "xqglpbg", "text": "Notes for process recording", "cat": "done"}]}], "note": ""}, "2026-04-17": {"slots": [{"id": "xedb8b9", "time": null, "tasks": [{"id": "xcjyp6u", "text": "Draft EH Language", "cat": "done"}, {"id": "xatf9kq", "text": "Respond to resource hu", "cat": "done"}, {"id": "x10t0ti", "text": "Respond to shay", "cat": "done"}]}], "note": ""}, "2026-04-18": {"slots": [{"id": "xumjwid", "time": "10-11", "tasks": [{"id": "xk2lme3", "text": "Sophia - gym", "cat": "done"}]}, {"id": "x0gxo9y", "time": "1-1:45", "tasks": [{"id": "xgd8eqy", "text": "Meet with Jess", "cat": "done"}, {"id": "x9yuzcy", "text": "Practice Group", "cat": "done"}]}, {"id": "xn3vi0o", "time": "4:45-10:30", "tasks": [{"id": "xmfoxwm", "text": "Dinner & Show", "cat": "personal"}]}], "note": ""}, "2026-04-19": {"slots": [{"id": "x36uhrp", "time": null, "tasks": [{"id": "x7j2czh", "text": "Do research assignment", "cat": "done"}, {"id": "xd5nq9o", "text": "Practice Group Briefs & Practice it", "cat": "done"}]}], "note": ""}, "2026-04-20": {"slots": [{"id": "xkfxy5l", "time": "9:30-1 pm", "tasks": [{"id": "xkxbfiu", "text": "Social Crisis Cell Validation", "cat": "done"}]}, {"id": "xf6668a", "time": "1-4:30 pm", "tasks": [{"id": "x77vxs5", "text": "Meetings", "cat": "external"}, {"id": "x417amh", "text": "Walk Arwen", "cat": "personal"}]}, {"id": "xdjh7mi", "time": "Before class", "tasks": [{"id": "xruifo6", "text": "Print out facilitator guides", "cat": "done"}, {"id": "x91526q", "text": "Make dinner", "cat": "personal"}]}, {"id": "x8v7ace", "time": "6:25 pm - 9 pm", "tasks": [{"id": "xtj99ui", "text": "Class", "cat": "external"}]}], "note": ""}, "2026-04-21": {"slots": [{"id": "x20mknr", "time": "7:20 AM", "tasks": [{"id": "xstlfhw", "text": "Fall Registration", "cat": "external"}]}, {"id": "xprc7ij", "time": "9-10 AM", "tasks": [{"id": "x3brd4f", "text": "Process Recording", "cat": "done"}, {"id": "xr1onyn", "text": "TS curriculum", "cat": "done"}]}, {"id": "x0yefpn", "time": "10 am - 5 pm", "tasks": [{"id": "x6f33in", "text": "Social Crisis - finalize to share", "cat": "done"}]}, {"id": "xq9qgym", "time": "6-7", "tasks": [{"id": "xhj4iwz", "text": "Practicum", "cat": "done"}]}], "note": ""}, "2026-04-22": {"slots": [{"id": "x76w8b9", "time": null, "tasks": [{"id": "xsbvrrr", "text": "Girl Scout SWAPS", "cat": "done"}]}], "note": ""}, "2026-04-15": {"slots": [], "note": ""}, "2026-04-23": {"slots": [{"id": "xid1kb6", "time": "Before 11 AM", "tasks": [{"id": "xfn8oqq", "text": "Update Handbooks", "cat": "done"}]}, {"id": "xu41l9b", "time": "4:30-7:30", "tasks": [{"id": "x41zat2", "text": "Practicum", "cat": "done"}]}], "note": ""}, "2026-04-24": {"slots": [{"id": "x77v1ci", "time": "Before 11 AM", "tasks": [{"id": "xy5trwm", "text": "Input Jira Tasks", "cat": "done"}]}, {"id": "xzpkt9q", "time": "11-12:30", "tasks": [{"id": "xpz9i12", "text": "Send abe bday note", "cat": "done"}, {"id": "xbcr61g", "text": "Meetings", "cat": "done"}]}, {"id": "xmrkfq4", "time": "1-3 PM", "tasks": [{"id": "xaqged5", "text": "Meetings", "cat": "done"}]}, {"id": "xtfdxsu", "time": "EVENING", "tasks": [{"id": "xnngcum", "text": "Abby dinner", "cat": "external"}, {"id": "x8rlt3m", "text": "Movie", "cat": "external"}]}], "note": ""}, "2026-04-14": {"slots": [], "note": ""}, "2026-04-25": {"slots": [{"id": "xnwj52e", "time": "MORNING", "tasks": [{"id": "xp6g46t", "text": "Role play reflection", "cat": "practicum"}, {"id": "x8m134f", "text": "Research Assignment", "cat": "practicum"}]}, {"id": "xj19sqg", "time": "1:15-4:30", "tasks": [{"id": "xqbhavx", "text": "Hair", "cat": "personal"}]}, {"id": "x7k9m5j", "time": "EVENING", "tasks": [{"id": "xdxj7g7", "text": "AP", "cat": "personal"}]}], "note": ""}, "2026-04-26": {"slots": [{"id": "x9jp8ty", "time": "2-3 PM", "tasks": [{"id": "xrulsok", "text": "Cake arrives", "cat": "personal"}]}, {"id": "xoku6hb", "time": "4-8 PM", "tasks": [{"id": "xko12o3", "text": "Abe Bday Park hang", "cat": "personal"}]}], "note": ""}, "2026-04-27": {"slots": [{"id": "xl9t6bj", "time": null, "tasks": [{"id": "x5j0aax", "text": "Send note to leave coverage team", "cat": "done"}, {"id": "xy66nbc", "text": "SW Notes", "cat": "done"}]}, {"id": "xqokqkm", "time": "Before Class", "tasks": [{"id": "xt82s61", "text": "Submit Role Play assessment", "cat": "done"}]}, {"id": "xxux7pf", "time": "6:30-9", "tasks": [{"id": "xks43t9", "text": "Class", "cat": "external"}]}], "note": ""}, "2026-04-28": {"slots": [{"id": "xtoday1", "time": "TODAY - URGENT", "tasks": [{"id": "xt1a", "text": "Make Abe lunch graduation reservation", "cat": "urgent"}, {"id": "xt1b", "text": "CS H1 PBC options brief", "cat": "work"}, {"id": "xt1c", "text": "Reschedule dermatologist", "cat": "quick"}, {"id": "xt1d", "text": "Set up Q2 goal setting + sprint planning session", "cat": "work"}]}, {"id": "xtoday2", "time": null, "tasks": [{"id": "xt2a", "text": "Succession Planning Synthesis", "cat": "work"}]}], "note": ""}, "2026-04-29": {"slots": [{"id": "xtom1", "time": "TOMORROW", "tasks": [{"id": "xto1", "text": "Update SW notes (based on feedback)", "cat": "practicum"}, {"id": "xto2", "text": "Social crisis framework updates", "cat": "work"}]}], "note": ""}, "2026-04-30": {"slots": [{"id": "xcno0fy", "time": "EVENING", "tasks": [{"id": "xkh4yz8", "text": "Dinner with mom", "cat": "personal"}]}], "note": ""}, "2026-05-01": {"slots": [], "note": ""}, "2026-05-02": {"slots": [], "note": ""}, "2026-05-03": {"slots": [], "note": ""}}, "upcoming": [{"id": "x6finb6", "date": "April 27", "items": [{"id": "xnms3kj", "text": "Role Play Assessment Due", "note": ""}]}, {"id": "x5b15jq", "date": "April 29", "items": [{"id": "xtaq70w", "text": "Abe birthday", "note": ""}]}, {"id": "xr5dxuf", "date": "May 5", "items": [{"id": "xl8wfs3", "text": "Practicum Ends", "note": "Schedule Abi and Katy"}]}, {"id": "xtew5mp", "date": "May 10", "items": [{"id": "xguuzia", "text": "Mother's Day \ud83c\udf38", "note": ""}]}, {"id": "xwbs2o0", "date": "May 11", "items": [{"id": "xm0f67o", "text": "Groups Final Due", "note": ""}]}, {"id": "xu5eo2w", "date": "May 15", "items": [{"id": "xixeut5", "text": "Abby & husband wedding gift", "note": "~2 weeks to make \u2192 start by May 15"}]}, {"id": "xm8nef2", "date": "May 18", "items": [{"id": "x2h8lun", "text": "Set up supervision with Meredith", "note": ""}]}, {"id": "x10m0za", "date": "May 30", "items": [{"id": "x3kb5bi", "text": "Schedule gardening", "note": ""}]}, {"id": "xi0x0m7", "date": "June 1", "items": [{"id": "xrzjd9s", "text": "Book Peachy Appt before 7/16", "note": ""}]}, {"id": "xup01", "date": "May 2026", "items": [{"id": "xup01a", "text": "Set up mid-sprint check-in for May", "note": ""}]}, {"id": "xup02", "date": "May 28", "items": [{"id": "xup02a", "text": "Figure out onsite day with team", "note": ""}]}, {"id": "xup03", "date": "Q2", "items": [{"id": "xup03a", "text": "Regional transition governance", "note": ""}, {"id": "xup03b", "text": "Find out when budgeting happens for leave data dashboard + analysis for leaders", "note": "H2 target"}]}, {"id": "xup04", "date": "TBD", "items": [{"id": "xup04a", "text": "Finish cross stitch for niece", "note": "Before baptism \u2014 date unknown"}, {"id": "xup04b", "text": "Research Portugal trip", "note": ""}, {"id": "xup04c", "text": "Reach out to David about London trip", "note": ""}]}], "thisWeek": {"2026-04-13": [{"id": "x11kn70", "text": "Baby gift", "done": true}, {"id": "xsvimk7", "text": "Book derm", "done": true}, {"id": "xn5yocp", "text": "Hair appt", "done": true}], "2026-04-20": [{"id": "xgnddlt", "text": "Abe bday gift", "done": true}, {"id": "xbxi987", "text": "Schedule onsite", "done": true}, {"id": "xxftj0o", "text": "Order cake", "done": true}], "2026-04-27": [{"id": "x2na6fs", "text": "Book annual physical and sinus check", "done": false}, {"id": "xtug18l", "text": "abe grad", "done": false}, {"id": "xb96usb", "text": "reschedule glassblowing", "done": false}, {"id": "xuyqlmo", "text": "Exec relo package", "done": false}, {"id": "xgshols", "text": "Spring wardrobe", "done": false}, {"id": "xkzou83", "text": "Update SW notes", "done": false}, {"id": "xdb7t72", "text": "Reach out to Carla and Amia", "done": false}, {"id": "x2pwt6e", "text": "Place wedding album order", "done": false}, {"id": "xnw01", "text": "Get another volunteer for leave coverage planning synthesis", "done": false}, {"id": "xnw02", "text": "Set up time with regional directors on leave coverage", "done": false}, {"id": "xnw03", "text": "Figure out how to involve PBPs in regional director conversation", "done": false}, {"id": "xnw04", "text": "Check if Deb & Mary global learning stipend calendar invite sent (if not, reach out)", "done": false}, {"id": "xnw05", "text": "Reach out to families \u2014 letting them know you're leaving practicum", "done": false}, {"id": "xnw06", "text": "Respond to Vanessa", "done": false}, {"id": "xnw07", "text": "See whether you can cancel Carmine dinner reservation", "done": false}, {"id": "xnw08", "text": "Create Jira ticket \u2014 transitioning PBC leave process to comp team", "done": false}, {"id": "xnw09", "text": "Create Jira ticket \u2014 operationalization of Japan parental leave enhancements", "done": false}, {"id": "xnw10", "text": "Book London lodging", "done": false}, {"id": "xnw11", "text": "Book Portugal lodging", "done": false}, {"id": "xnw12", "text": "Research before Lauren meeting on exec relocation package", "done": false}, {"id": "xnw13", "text": "\u23f8 BLOCKED: Relocation address change \u2014 waiting on payroll examples", "done": false}, {"id": "xnw14", "text": "\u23f8 Set up Tenaya to drive Workday (get Shay off it)", "done": false}, {"id": "xnw15", "text": "\u23f8 Follow up with Hanhe + Ellie \u2014 team wellness day (Australia issues)", "done": false}]}, "windowStart": "2026-04-28", "watching": [{"id":"xw01","text":"Relocation address change — waiting on examples from payroll"},{"id":"xw02","text":"Set up Tenaya to drive Workday (get Shay off it)"},{"id":"xw03","text":"Follow up with Hanhe + Ellie — team wellness day (Australia issues)"},{"id":"xw04","text":"Leave data dashboard — clean up data + find out when H2 budgeting happens"},{"id":"xw05","text":"Regional transition governance — needs to get going in Q2"}]};
@@ -344,7 +369,7 @@ function load(){
     }
   }catch(e){store=JSON.parse(JSON.stringify(EMBEDDED_STORE));}
   if(!store.windowStart)store.windowStart=fk(new Date());
-  render();
+  render();initWatchDocDrop();
   setTimeout(()=>{if(typeof google!=='undefined'&&google.accounts){showBanner(true);setSyncState('signin','Sign in');}},800);
 }
 function load_unused(){
@@ -370,7 +395,82 @@ function shift(n){const d=pk(store.windowStart);d.setDate(d.getDate()+n);store.w
 function jumpToday(){store.windowStart=fk(new Date());save();render();}
 function sortUpcoming(){store.upcoming.sort((a,b)=>{const da=pd(a.date),db=pd(b.date);if(!da&&!db)return 0;if(!da)return 1;if(!db)return -1;return da-db;});}
 
-function render(){rLeg();rDays();rThisWeek();rWatching();rUp();}
+function render(){rLeg();rDays();rThisWeek();rWatching();rRecurring();rUp();}
+
+// ---- Recurring ----
+const DOW_NAMES=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+let recurringFormOpen=false;
+
+function applyRecurring(iso){
+  // For a given day ISO, check if any recurring rules match and auto-add if not already present
+  if(!store.recurring||!store.recurring.length)return;
+  const dow=pk(iso).getDay();
+  const d=getDay(iso);
+  store.recurring.forEach(r=>{
+    if(r.dow!==dow)return;
+    // Check if already applied (match by recurring id tag)
+    const alreadyThere=d.slots.some(s=>s.tasks&&s.tasks.some(t=>t.recurringId===r.id));
+    if(alreadyThere)return;
+    // Find existing slot with same time or create new one
+    let slot=r.time?d.slots.find(s=>s.time===r.time):null;
+    if(!slot){
+      slot={id:uid(),time:r.time||null,tasks:[]};
+      d.slots.push(slot);
+    }
+    slot.tasks.push({id:uid(),text:r.text,cat:r.cat,recurringId:r.id});
+  });
+}
+
+function rRecurring(){
+  if(!store.recurring)store.recurring=[];
+  const el=document.getElementById('recurring-list');
+  const itemsHtml=store.recurring.map(r=>`
+    <div class="recurring-item">
+      <span class="recurring-day">${DOW_NAMES[r.dow]}</span>
+      <span class="recurring-time">${r.time||'—'}</span>
+      <span class="recurring-text">${r.text}</span>
+      <span class="recurring-cat chip cat-${r.cat}" style="cursor:default">${CATS[r.cat]||r.cat}</span>
+      <span class="recurring-del" onclick="delRecurring('${r.id}')">✕ remove</span>
+    </div>`).join('');
+  const formHtml=recurringFormOpen?`
+    <div class="recurring-form">
+      <select id="rec-dow">
+        ${DOW_NAMES.map((n,i)=>`<option value="${i}">${n}</option>`).join('')}
+      </select>
+      <input type="text" id="rec-time" placeholder="Time (e.g. 4:30–7:30pm)" style="width:150px"/>
+      <input type="text" id="rec-text" placeholder="Task name" style="flex:1;min-width:140px" onkeydown="if(event.key==='Enter')commitRecurring()"/>
+      <select id="rec-cat">
+        ${Object.entries(CATS).filter(([k])=>k!=='done'&&k!=='moved').map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}
+      </select>
+      <div class="form-row" style="gap:4px;flex-shrink:0">
+        <button class="primary" style="padding:5px 10px;font-size:11px" onclick="commitRecurring()">Add</button>
+        <button style="padding:5px 10px;font-size:11px" onclick="recurringFormOpen=false;rRecurring()">Cancel</button>
+      </div>
+    </div>`
+    :`<div class="recurring-add" onclick="recurringFormOpen=true;rRecurring()">+ add recurring task</div>`;
+  el.innerHTML=`<div class="recurring-wrap">${itemsHtml||''}${formHtml}</div>`;
+  if(recurringFormOpen)setTimeout(()=>{const t=document.getElementById('rec-text');if(t)t.focus();},30);
+}
+
+function commitRecurring(){
+  const dow=parseInt(document.getElementById('rec-dow').value);
+  const time=document.getElementById('rec-time').value.trim();
+  const text=document.getElementById('rec-text').value.trim();
+  const cat=document.getElementById('rec-cat').value;
+  if(!text)return;
+  if(!store.recurring)store.recurring=[];
+  store.recurring.push({id:uid(),dow,time:time||null,text,cat});
+  recurringFormOpen=false;
+  save();rRecurring();
+  // Apply to visible days immediately
+  getWindow().forEach(iso=>{applyRecurring(iso);});
+  save();rDays();
+}
+
+function delRecurring(id){
+  store.recurring=(store.recurring||[]).filter(r=>r.id!==id);
+  save();rRecurring();
+}
 
 // ---- Quick Add ----
 const DAY_MAP={sunday:0,monday:1,tuesday:2,wednesday:3,thursday:4,friday:5,saturday:6,sun:0,mon:1,tue:2,wed:3,thu:4,fri:5,sat:6,today:null,tomorrow:null};
@@ -467,14 +567,27 @@ function carryOver(mon){
   const items=getTW(mon)||[];
   const unchecked=items.filter(t=>!t.done);
   if(!unchecked.length){alert('No unchecked items to carry over!');return;}
-  // Find next Monday
   const d=pk(mon);d.setDate(d.getDate()+7);
   const nextMon=fk(d);
   const nextTW=getTW(nextMon);
-  unchecked.forEach(t=>nextTW.push({id:uid(),text:t.text,done:false}));
-  // Mark as carried in current week
-  store.thisWeek[mon]=items.map(t=>t.done?t:{...t,text:t.text+' ↗',done:true});
+  unchecked.forEach(t=>nextTW.push({id:uid(),text:t.text,cat:t.cat||'work',done:false,carriedOver:true}));
+  // Mark originals with carriedOver indicator instead of strikethrough
+  store.thisWeek[mon]=items.map(t=>t.done?t:{...t,carriedOver:true});
   save();rThisWeek();
+}
+
+function twSetCat(mon,id,cat){
+  const t=getTW(mon).find(x=>x.id===id);if(!t)return;
+  t.cat=cat;save();rThisWeek();
+}
+function watchSetCat(id,cat){
+  const w=(store.watching||[]).find(x=>x.id===id);if(!w)return;
+  w.cat=cat;save();rWatching();
+}
+function upSetCat(uid2,iid,cat){
+  const u=(store.upcoming||[]).find(x=>x.id===uid2);if(!u)return;
+  const it=u.items.find(x=>x.id===iid);if(!it)return;
+  it.cat=cat;save();rUp();
 }
 
 // ---- Watching ----
@@ -485,9 +598,12 @@ function rWatching(){
     <div class="watching-item" draggable="true" data-watch-id="${w.id}">
       <div class="watching-dot"></div>
       <span class="watching-text" ondblclick="editWatching(this,'${w.id}')">${w.text}</span>
+      <select class="tw-cat-sel chip cat-${w.cat||'work'}" onchange="watchSetCat('${w.id}',this.value)" onclick="event.stopPropagation()" title="Category">
+        ${Object.entries(CATS).filter(([k])=>k!=='done'&&k!=='moved'&&k!=='external').map(([k,v])=>`<option value="${k}"${(w.cat||'work')===k?' selected':''}>${v}</option>`).join('')}
+      </select>
       <span class="watching-del" onclick="delWatching('${w.id}')">✕</span>
     </div>`).join('');
-  html+=`<div class="watching-add-wrap" onclick="addWatching()">+ add item to watch</div>`;
+  html+=`<div class="watching-add-wrap" onclick="addWatching()">+ add to radar</div>`;
   grid.innerHTML=html;
   bindWatchDrag();
 }
@@ -521,36 +637,49 @@ function bindWatchDrag(){
     });
     el.addEventListener('dragend',()=>{
       el.classList.remove('watch-dragging');
-      document.querySelectorAll('.day-tw-drop-over,.tw-drop-over,.up-day-drop-over').forEach(x=>x.classList.remove('day-tw-drop-over','tw-drop-over','up-day-drop-over'));
+      document.querySelectorAll('.watch-day-over,.watch-tw-over').forEach(x=>x.classList.remove('watch-day-over','watch-tw-over'));
       watchDrag=null;
     });
   });
-  // Drop onto day columns
-  document.querySelectorAll('[data-iso]').forEach(el=>{
-    el.addEventListener('dragover',e=>{if(!watchDrag)return;e.preventDefault();el.classList.add('day-tw-drop-over');});
-    el.addEventListener('dragleave',e=>{if(!el.contains(e.relatedTarget))el.classList.remove('day-tw-drop-over');});
-    el.addEventListener('drop',e=>{
-      e.preventDefault();el.classList.remove('day-tw-drop-over');if(!watchDrag)return;
-      const w=(store.watching||[]).find(x=>x.id===watchDrag);if(!w)return;
-      const iso=el.dataset.iso,slots=gsa(iso);
+}
+
+// Document-level drop handling for watch drag — runs once
+let watchDocBound=false;
+function initWatchDocDrop(){
+  if(watchDocBound)return;
+  watchDocBound=true;
+  document.addEventListener('dragover',e=>{
+    if(!watchDrag)return;
+    const day=e.target.closest('[data-iso]');
+    const tw=e.target.closest('[data-tw-box]');
+    if(day||tw){
+      e.preventDefault();
+      document.querySelectorAll('.watch-day-over,.watch-tw-over').forEach(x=>x.classList.remove('watch-day-over','watch-tw-over'));
+      if(day)day.classList.add('watch-day-over');
+      if(tw)tw.classList.add('watch-tw-over');
+    }
+  });
+  document.addEventListener('drop',e=>{
+    if(!watchDrag)return;
+    const day=e.target.closest('[data-iso]');
+    const tw=e.target.closest('[data-tw-box]');
+    if(!day&&!tw)return;
+    e.preventDefault();
+    document.querySelectorAll('.watch-day-over,.watch-tw-over').forEach(x=>x.classList.remove('watch-day-over','watch-tw-over'));
+    const w=(store.watching||[]).find(x=>x.id===watchDrag);
+    if(!w){watchDrag=null;return;}
+    if(day){
+      const iso=day.dataset.iso,slots=gsa(iso);
       const task={id:uid(),text:w.text,cat:'work'};
       if(slots.length>0){slots[slots.length-1].tasks.push(task);}
       else{slots.push({id:uid(),time:null,tasks:[task]});}
       store.watching=store.watching.filter(x=>x.id!==watchDrag);
       watchDrag=null;save();rDays();rWatching();
-    });
-  });
-  // Drop onto this-week boxes
-  document.querySelectorAll('[data-tw-box]').forEach(el=>{
-    el.addEventListener('dragover',e=>{if(!watchDrag)return;e.preventDefault();el.classList.add('tw-drop-over');});
-    el.addEventListener('dragleave',e=>{if(!el.contains(e.relatedTarget))el.classList.remove('tw-drop-over');});
-    el.addEventListener('drop',e=>{
-      e.preventDefault();el.classList.remove('tw-drop-over');if(!watchDrag)return;
-      const w=(store.watching||[]).find(x=>x.id===watchDrag);if(!w)return;
-      getTW(el.dataset.twBox).push({id:uid(),text:w.text,done:false});
+    } else if(tw){
+      getTW(tw.dataset.twBox).push({id:uid(),text:w.text,done:false});
       store.watching=store.watching.filter(x=>x.id!==watchDrag);
       watchDrag=null;save();rThisWeek();rWatching();
-    });
+    }
   });
 }
 
@@ -566,7 +695,9 @@ function chipH(t,iso,sid){
     <span class="chip-text" ondblclick="eChip(this,'${iso}','${sid}','${t.id}')">${t.text}</span>
     ${nx?'':` <span class="chip-btns">
       <span class="chip-btn done-btn" onclick="markDone(event,'${iso}','${sid}','${t.id}')" title="${isDone?'Unmark done':'Mark done'}">&#10003;</span>
-      <span class="chip-btn" onclick="cycCat(event,'${iso}','${sid}','${t.id}')">&#127752;</span>
+      <select class="chip-cat-sel cat-${t.cat}" onchange="setCat(event,'${iso}','${sid}','${t.id}',this.value)" onclick="event.stopPropagation()" title="Change category">
+        ${Object.entries(CATS).filter(([k])=>k!=='external').map(([k,v])=>`<option value="${k}"${t.cat===k?' selected':''}>${v}</option>`).join('')}
+      </select>
       <span class="chip-btn" onclick="delTask('${iso}','${sid}','${t.id}')">&#10005;</span>
     </span>`}
   </div>
@@ -593,6 +724,7 @@ function slotH(s,iso){
 }
 
 function dayH(iso){
+  applyRecurring(iso);
   const d=getDay(iso),st=dayStatus(iso),name=dayName(iso),dateStr=fd(pk(iso));
   const slots=d.slots.map(s=>slotH(s,iso)).join('');
   const trailDZ=`<div class="slot-drop-zone" data-sdz="${iso}" data-before="__last__"></div>`;
@@ -616,7 +748,7 @@ function rDays(){
   const grid=document.getElementById('days-grid');
   grid.style.gridTemplateColumns=`repeat(${size},minmax(0,1fr))`;
   grid.innerHTML=isos.map(iso=>dayH(iso)).join('');
-  wF();bindDrag();bindCrossDrag();bindUpToDay();
+  wF();bindDrag();bindCrossDrag();bindUpToDay();bindWatchDrag();
 }
 
 function rThisWeek(){
@@ -632,10 +764,14 @@ function rThisWeek(){
   groups.forEach(g=>{
     const tasks=getTW(g.mon),monDate=pk(g.mon),sunDate=new Date(monDate);sunDate.setDate(monDate.getDate()+6);
     const label=fd(monDate)+' \u2013 '+fd(sunDate);
+    const catOpts=Object.entries(CATS).filter(([k])=>k!=='done'&&k!=='moved'&&k!=='external').map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
     const tasksHtml=tasks.map(t=>`
       <div class="tw-item" draggable="true" data-tw-mon="${g.mon}" data-tw-id="${t.id}">
         <input type="checkbox" ${t.done?'checked':''} onchange="twToggle('${g.mon}','${t.id}',this.checked)"/>
-        <span class="tw-item-text${t.done?' done-text':''}" ondblclick="twEdit(this,'${g.mon}','${t.id}')">${t.text}</span>
+        <span class="tw-item-text${t.done?' done-text':''}" ondblclick="twEdit(this,'${g.mon}','${t.id}')">${t.carriedOver?'<span style="font-size:9px;color:#BA7517;margin-right:3px" title="Carried over">↗</span>':''}${t.text}</span>
+        <select class="tw-cat-sel chip cat-${t.cat||'work'}" onchange="twSetCat('${g.mon}','${t.id}',this.value)" onclick="event.stopPropagation()" title="Category">
+          ${Object.entries(CATS).filter(([k])=>k!=='done'&&k!=='moved'&&k!=='external').map(([k,v])=>`<option value="${k}"${(t.cat||'work')===k?' selected':''}>${v}</option>`).join('')}
+        </select>
         <span class="tw-del" onclick="twDel('${g.mon}','${t.id}')">&#10005;</span>
       </div>`).join('');
     const formHtml=twForm===g.mon
@@ -647,10 +783,11 @@ function rThisWeek(){
   });
   grid.innerHTML=html;
   if(twForm){setTimeout(()=>{const el=document.getElementById('tw-inp-'+twForm);if(el)el.focus();},30);}
-  bindCrossDrag();
+  bindCrossDrag();bindWatchDrag();
 }
 
 function rUp(){
+  sortUpcoming();
   const cards=store.upcoming||[];let html='';
   cards.forEach((u,i)=>{
     html+=`<div class="up-drop-zone" data-up-dz="${i}"></div>`;
@@ -659,7 +796,12 @@ function rUp(){
       ${(u.items||[]).map(it=>`<div class="up-item">
         <span><span class="up-item-text" ondblclick="eUpText(this,'${u.id}','${it.id}')">${it.text}</span>
         ${it.note?`<span class="up-note" ondblclick="eUpNote(this,'${u.id}','${it.id}')">${it.note}</span>`:`<span class="up-note" style="opacity:.3;font-style:italic" ondblclick="eUpNote(this,'${u.id}','${it.id}')">add note\u2026</span>`}</span>
-        <span class="up-del" onclick="delUp('${u.id}','${it.id}')">&#10005;</span>
+        <span style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+          <select class="tw-cat-sel chip cat-${it.cat||'urgent'}" onchange="upSetCat('${u.id}','${it.id}',this.value)" onclick="event.stopPropagation()" title="Category">
+            ${Object.entries(CATS).filter(([k])=>k!=='done'&&k!=='moved'&&k!=='external').map(([k,v])=>`<option value="${k}"${(it.cat||'urgent')===k?' selected':''}>${v}</option>`).join('')}
+          </select>
+          <span class="up-del" onclick="delUp('${u.id}','${it.id}')">&#10005;</span>
+        </span>
       </div>`).join('')}
     </div>`;
   });
@@ -756,10 +898,9 @@ function eNote(div,iso){
   inp.addEventListener('blur',()=>{d.note=inp.value.trim();save();rDays();});
   inp.addEventListener('keydown',e=>{if(e.key==='Enter')inp.blur();if(e.key==='Escape')rDays();});
 }
-function cycCat(e,iso,sid,tid){
+function setCat(e,iso,sid,tid,cat){
   e.stopPropagation();const s=fs(iso,sid);if(!s)return;const t=s.tasks.find(x=>x.id===tid);if(!t)return;
-  const ks=Object.keys(CATS).filter(k=>k!=='external'&&k!=='done');
-  t.cat=ks[(ks.indexOf(t.cat)+1)%ks.length];save();rDays();
+  t.cat=cat;save();rDays();
 }
 
 // ---- TW functions ----
